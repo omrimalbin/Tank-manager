@@ -363,6 +363,7 @@ const shellTypes=()=>['חלול','חצב','חץ','כלנית'];
 const addTypes=()=>[...shellTypes(),'אלומיניום'];
 const gcap=g=>g.kind==='s'?SL[g.id]:null;
 const gtot=g=>g.items.reduce((a,x)=>a+x.q,0);
+const rtot=g=>g.items.reduce((a,x)=>a+(x.n==='אלומיניום'?0:x.q),0);
 function toast(m){try{const d=document.createElement('div');d.className='ghost';d.style.cssText='position:fixed;left:50%;bottom:170px;transform:translateX(-50%);z-index:200;pointer-events:none';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}catch(e){}}
 const BRT={m:['צריח עילית','צריח תחתית','מסדרון אחורי'],h:['ברוס 0.5']};
 function addI(g){const n=val('an-'+g);let q=AQ[g]||1;if(!n)return;const G=gi(g),it=G.items.find(x=>x.n===n),cp=gcap(G);if(cp!=null){const room=cp-gtot(G);if(room<=0){toast(G.name+' מלא ('+gtot(G)+'/'+cp+')');return}if(q>room){q=room;toast('נוספו '+q+' בלבד - המארז מלא ('+cp+')')}}if(it)it.q+=q;else G.items.push({n,q});save();render()}
@@ -410,7 +411,7 @@ if(SEL===id){SEL=null;render();return}
 if(S.ammo.slots[g][+k]){SEL=id;render()}else slotPick(id)}
 function dm(e,g,k){if(!ME)return;const from=g+':'+k;dragGen(e,S.ammo.slots[g][k],ev=>Math.hypot(ev.clientX-e.clientX,ev.clientY-e.clientY)<8?null:nearSlot(ev,from),c=>{SEL=null;if(c.dataset.s==='fire')fireSlot(from);else doMove(from,c.dataset.s)},()=>tapSlot(from))}
 let ME=false;
-function mapCard(){syncSlots();const A=S.ammo;let o='';const tot=id=>gi(id).items.reduce((a,x)=>a+x.q,0);
+function mapCard(){syncSlots();const A=S.ammo;let o='';const tot=id=>rtot(gi(id));
 const blk=(id,bx)=>`<rect x="${bx}" y="22" width="160" height="214" rx="10" fill="none" stroke="var(--bd)"/><text x="${bx+80}" y="15" text-anchor="middle" font-size="12" fill="var(--mu)">${esc(gi(id).name)} · ${tot(id)}</text>`;
 const side=x=>`<rect x="${x}" y="272" width="60" height="100" rx="10" fill="none" stroke="var(--bd)"/><text x="${x+30}" y="266" text-anchor="middle" font-size="12" fill="var(--mu)">מסריחים</text>`;
 o+=side(10)+side(290)+blk('t',190)+blk('c',10)+`<circle cx="180" cy="318" r="52" fill="none" stroke="var(--bd)" stroke-dasharray="2 4"/><text x="180" y="316" text-anchor="middle" font-size="12" fill="var(--mu)">${esc(gi('f').name)}</text><text x="180" y="332" text-anchor="middle" font-size="12" fill="var(--mu)">${tot('f')}</text>`;
@@ -423,7 +424,7 @@ return `<div class="c"><h2>מפת פגזים <button class="b2" style="float:lef
 <div class="chips" style="margin-top:8px;font-size:13px">${names.map(n=>`<span style="display:inline-flex;gap:4px;align-items:center"><i style="width:12px;height:12px;border-radius:50%;background:${col(n)[0]};display:inline-block"></i>${esc(n)}</span>`).join(' ')}</div>
 <div class="mu">${ME?'מצב עריכה: גרור פגז לעיגול אחר, או לחץ על פגז ואז על עיגול. לחיצה על עיגול ריק מוסיפה פגז חדש. גרירה לעיגול "נורה" מורידה מהמלאי ורושמת ירי.':'המפה לקריאה בלבד. לשינוי לחץ על "עריכה".'}</div></div>`}
 function ammoSum(){const sh={},ord=['חלול','חצב','חץ','כלנית','אלומיניום','תקול'];let st=0;
-S.ammo.g.filter(g=>g.kind==='s').forEach(g=>g.items.forEach(x=>{if(x.q>0){sh[x.n]=(sh[x.n]||0)+x.q;st+=x.q}}));
+S.ammo.g.filter(g=>g.kind==='s').forEach(g=>g.items.forEach(x=>{if(x.q>0){sh[x.n]=(sh[x.n]||0)+x.q;if(x.n!=='אלומיניום')st+=x.q}}));
 const tot=id=>{const g=gi(id);return g?g.items.reduce((a,x)=>a+x.q,0):0};
 const names=Object.keys(sh).sort((a,b)=>{const i=ord.indexOf(a),j=ord.indexOf(b);return(i<0?99:i)-(j<0?99:j)});
 return{sh,names,st,mag:tot('m'),h:tot('h')}}
@@ -431,7 +432,7 @@ function ammoSumTxt(){const s=ammoSum();return 'סיכום תחמושת:\nפגז
 function sumCard(){const s=ammoSum(),t=ammoSumTxt(),row=(l,v,b)=>`<div class="it"><span${b?' style="font-weight:700"':''}>${esc(l)}</span><b style="min-width:40px;text-align:center">${v}</b></div>`;
 return `<div class="c"><h2>סיכום מלאי — כל הקטגוריות</h2>${s.names.map(n=>row(n,s.sh[n])).join('')||'<div class="mu">אין פגזים</div>'}${row('סה״כ פגזים',s.st,1)}${row('ברוס מאג סה״כ',s.mag,1)}${row('ברוס 0.5 סה״כ',s.h,1)}
 <div class="r"><a class="b" style="flex:1;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(t)}">שלח בוואטסאפ</a><button class="b2" onclick="try{navigator.clipboard.writeText(ammoSumTxt());this.textContent='הועתק ✓'}catch(e){}">העתק</button></div></div>`}
-function ammoRep(){const O=['f','t','c','x','m','h'],T=g=>g.items.reduce((a,x)=>a+x.q,0);return 'דוח תחמושת:\n'+S.ammo.g.slice().sort((a,b)=>O.indexOf(a.id)-O.indexOf(b.id)).map(g=>g.id==='h'?`ברוס 0.5 - ${T(g)}`:`${g.name} סה״כ ${T(g)}:\n`+(g.items.length?g.items.map(x=>`${x.n} - ${x.q}`).join('\n'):'-')).join('\n\n')}
+function ammoRep(){const O=['f','t','c','x','m','h'],T=g=>rtot(g);return 'דוח תחמושת:\n'+S.ammo.g.slice().sort((a,b)=>O.indexOf(a.id)-O.indexOf(b.id)).map(g=>g.id==='h'?`ברוס 0.5 - ${T(g)}`:`${g.name} סה״כ ${T(g)}:\n`+(g.items.length?g.items.map(x=>`${x.n} - ${x.q}`).join('\n'):'-')).join('\n\n')}
 function frAdd(el){const v=el.value;if(!v)return;const nv=FR.ammo?FR.ammo+', '+v:v;document.getElementById('fri').value=nv;el.value='';frU('ammo',nv)}
 const FR={date:null,ammo:'',hit:'כן',miss:'ללא',range:'',mtk:'מלבין',desc:''};
 const frText=()=>{const d=FR.date||iso();return `צ: ${R.cur}\nצוות: ${S.crew}\nתאריך: ${fd(d)}.${d.slice(0,4)}\nסוג תחמושת: ${FR.ammo}\nפגיעה: ${FR.hit}\nסוג החטאה: ${FR.miss}\nטווח: ${FR.range}\nשם המט״ק: ${FR.mtk}\nתיאור קצר של האירוע:\n${FR.desc}`};
@@ -453,7 +454,7 @@ return `${R.cur}\nירוק\nשצל ${parts.length?parts.join(', '):'אין'}`}
 function ammoView(){
 const t=ammoText();
 const ORD=['f','t','c','x','m','h'];
-const grp=S.ammo.g.slice().sort((a,b)=>ORD.indexOf(a.id)-ORD.indexOf(b.id)).map(g=>{const tot=g.items.reduce((a,x)=>a+x.q,0);
+const grp=S.ammo.g.slice().sort((a,b)=>ORD.indexOf(a.id)-ORD.indexOf(b.id)).map(g=>{const tot=rtot(g);
 return `<div class="c gc" ${g.kind==='s'?`data-g="${g.id}"`:''}><h2>${esc(g.name)} — סה״כ ${tot}</h2>
 ${g.items.map((x,i)=>`<div class="it ${x.q?'':'done'}">${g.kind==='s'?`<span class="hd" onpointerdown="ds(event,'${g.id}',${i})">⠿</span>`:''}<span>${esc(x.n)}</span><button class="b2" style="min-width:42px;padding:4px 8px;font-weight:700" onclick="qeOpen('${g.id}',${i})">${x.q}</button><button class="x" onclick="delI('${g.id}',${i})">✕</button></div>`).join('')}
 <div class="r">${g.kind==='s'||BRT[g.id]?`<select id="an-${g.id}" onchange="AN['${g.id}']=this.value">${(g.kind==='s'?addTypes():BRT[g.id]).map(n=>`<option${n===AN[g.id]?' selected':''}>${esc(n)}</option>`).join('')}</select>`:`<input id="an-${g.id}" placeholder="סוג">`}<button class="b2" style="flex:0 0 52px;padding:8px 0" onclick="aqOpen('${g.id}')">${AQ[g.id]||1}</button><button class="b" onclick="addI('${g.id}')">הוסף</button><button class="b2" style="padding:6px 8px;font-size:13px;white-space:nowrap" onclick="fireOpen('${g.id}')">כמות שנורתה</button></div></div>`}).join('');
