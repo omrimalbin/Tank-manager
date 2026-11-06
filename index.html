@@ -347,7 +347,7 @@ function fire(g,i){const G=gi(g),it=G.items[i];if(it.q<=0)return;it.q--;S.ammo.f
 function addQ(g,i){gi(g).items[i].q++;save();render()}
 function delI(g,i){gi(g).items.splice(i,1);save();render()}
 let FM=null;
-const fmTypes=g=>{const G=gi(g);return G.kind==='s'?['חלול','חצב','חץ','כלנית']:(BRT[g]||G.items.map(x=>x.n))};
+const fmTypes=g=>{const G=gi(g);return G.kind==='s'?['חלול','חצב','חץ','כלנית','אלומיניום']:(BRT[g]||G.items.map(x=>x.n))};
 function fireOpen(g){const T=fmTypes(g),pref=g==='m'?'צריח עילית':'',d=T.includes(pref)?pref:(T[0]||'');FM={g,d,pick:-1,rows:[{n:d,q:1}]};fmR()}
 function fmR(){const el=document.getElementById('modal');if(!FM){el.innerHTML='';return}const G=gi(FM.g),T=fmTypes(FM.g);
 const pk=FM.pick>=0?`<div class="ov" style="background:rgba(0,0,0,.3);z-index:110" onclick="FM.pick=-1;fmR()"><div class="md" style="max-width:230px;padding:10px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="b2" style="padding:12px 0;font-size:18px" onclick="event.stopPropagation();FM.rows[${FM.pick}].q=${n};FM.pick=-1;fmR()">${n}</button>`).join('')}</div>${kpMore(`{const v=parseInt(document.getElementById('kpn').value);if(v>0){FM.rows[${FM.pick}].q=v;FM.pick=-1;fmR()}}`)}</div></div>`:'';
@@ -358,12 +358,16 @@ const AQ={},AN={};
 const kpMore=ok=>`<div class="r" style="margin-top:8px;flex-wrap:nowrap"><input type="number" inputmode="numeric" min="1" id="kpn" placeholder="כמות אחרת" style="min-width:0;width:100%;box-sizing:border-box" onclick="event.stopPropagation()"><button class="b" style="flex:0 0 46px;padding:8px 0" onclick="event.stopPropagation();${ok}">✓</button></div>`;
 function aqOpen(g){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md" style="max-width:230px;padding:10px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="b2" style="padding:12px 0;font-size:18px" onclick="AQ['${g}']=${n};closeM();render()">${n}</button>`).join('')}</div>${kpMore(`{const v=parseInt(document.getElementById('kpn').value);if(v>0){AQ['${g}']=v;closeM();render()}}`)}</div></div>`}
 function qeOpen(g,i){const it=gi(g).items[i];if(!it)return;const set=n=>`QE('${g}',${i},${n})`;document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md" style="max-width:230px;padding:10px"><div class="mu" style="margin-bottom:6px">${esc(it.n)} — כמות במלאי (עכשיו ${it.q})</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="b2" style="padding:12px 0;font-size:18px;${n===0?'grid-column:2':''}" onclick="${set(n)}">${n}</button>`).join('')}</div>${kpMore(`{const v=parseInt(document.getElementById('kpn').value);if(v>=0)${set('v')}}`)}</div></div>`}
-function QE(g,i,n){const it=gi(g).items[i];if(it){it.q=n;save()}closeM();render()}
+function QE(g,i,n){const G=gi(g),it=G.items[i];if(it){const cp=gcap(G);if(cp!=null){const m=Math.max(0,cp-(gtot(G)-it.q));if(n>m){n=m;toast('המארז מלא - המקסימום '+cp)}}it.q=n;save()}closeM();render()}
 const shellTypes=()=>['חלול','חצב','חץ','כלנית'];
+const addTypes=()=>[...shellTypes(),'אלומיניום'];
+const gcap=g=>g.kind==='s'?SL[g.id]:null;
+const gtot=g=>g.items.reduce((a,x)=>a+x.q,0);
+function toast(m){try{const d=document.createElement('div');d.className='ghost';d.style.cssText='position:fixed;left:50%;bottom:170px;transform:translateX(-50%);z-index:200;pointer-events:none';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}catch(e){}}
 const BRT={m:['צריח עילית','צריח תחתית','מסדרון אחורי'],h:['ברוס 0.5']};
-function addI(g){const n=val('an-'+g),q=AQ[g]||1;if(!n)return;const G=gi(g),it=G.items.find(x=>x.n===n);if(it)it.q+=q;else G.items.push({n,q});save();render()}
+function addI(g){const n=val('an-'+g);let q=AQ[g]||1;if(!n)return;const G=gi(g),it=G.items.find(x=>x.n===n),cp=gcap(G);if(cp!=null){const room=cp-gtot(G);if(room<=0){toast(G.name+' מלא ('+gtot(G)+'/'+cp+')');return}if(q>room){q=room;toast('נוספו '+q+' בלבד - המארז מלא ('+cp+')')}}if(it)it.q+=q;else G.items.push({n,q});save();render()}
 function delF(i){const x=S.ammo.fired.splice(i,1)[0],G=gi(x.g);if(G){const it=G.items.find(y=>y.n===x.n);if(it)it.q+=x.q;else G.items.push({n:x.n,q:x.q})}save();render()}
-function mvShell(g,i,to){const it=gi(g).items[i];if(!it||it.q<=0)return;it.q--;const T=gi(to),t=T.items.find(x=>x.n===it.n);if(t)t.q++;else T.items.push({n:it.n,q:1});save();render()}
+function mvShell(g,i,to){const it=gi(g).items[i];if(!it||it.q<=0)return;const T0=gi(to),c0=gcap(T0);if(c0!=null&&gtot(T0)>=c0){toast(T0.name+' מלא ('+c0+'/'+c0+')');return}it.q--;const T=gi(to),t=T.items.find(x=>x.n===it.n);if(t)t.q++;else T.items.push({n:it.n,q:1});save();render()}
 function dragGen(e,label,hit,drop,tap){e.preventDefault();const gh=document.createElement('div');gh.className='ghost';gh.textContent=label;document.body.appendChild(gh);
 let last=e,sy=0,tm,cur=null;
 const clr=()=>{if(cur)cur.classList.remove('hl');cur=null};
@@ -395,7 +399,7 @@ function nearSlot(ev,skip){let best=null,bd=1e9,bw=0;document.querySelectorAll('
 function doMove(from,to){const [g,k]=from.split(':'),[g2,k2]=to.split(':'),A=S.ammo.slots,a=A[g][+k],b=A[g2][+k2];if(!a||from===to)return;
 A[g][+k]=b||null;A[g2][+k2]=a;if(g!==g2){adj(g,a,-1);adj(g2,a,1);if(b){adj(g2,b,-1);adj(g,b,1)}}save();render()}
 function fireSlot(from){const [g,k]=from.split(':'),A=S.ammo.slots,a=A[g][+k];if(!a)return;A[g][+k]=null;adj(g,a,-1);S.ammo.fired.push({ts:Date.now(),g,gn:gi(g).name,n:a,q:1,k:'s'});save();render()}
-function slotPick(id){const names=shellTypes();
+function slotPick(id){const names=addTypes();
 document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">בחר סוג פגז</h2><div class="chips">${names.map(n=>`<button style="border-left:12px solid ${col(n)[0]}" onclick="slotSet('${id}','${n}')">${esc(n)}</button>`).join('')}</div><div class="r"><button class="b2" onclick="closeM()">ביטול</button></div></div></div>`}
 function slotSet(id,n){const [g,k]=id.split(':');if(S.ammo.slots[g][+k])return;S.ammo.slots[g][+k]=n;adj(g,n,1);closeM();save();render()}
 function tapSlot(id){if(!ME)return;
@@ -452,7 +456,7 @@ const ORD=['f','t','c','x','m','h'];
 const grp=S.ammo.g.slice().sort((a,b)=>ORD.indexOf(a.id)-ORD.indexOf(b.id)).map(g=>{const tot=g.items.reduce((a,x)=>a+x.q,0);
 return `<div class="c gc" ${g.kind==='s'?`data-g="${g.id}"`:''}><h2>${esc(g.name)} — סה״כ ${tot}</h2>
 ${g.items.map((x,i)=>`<div class="it ${x.q?'':'done'}">${g.kind==='s'?`<span class="hd" onpointerdown="ds(event,'${g.id}',${i})">⠿</span>`:''}<span>${esc(x.n)}</span><button class="b2" style="min-width:42px;padding:4px 8px;font-weight:700" onclick="qeOpen('${g.id}',${i})">${x.q}</button><button class="x" onclick="delI('${g.id}',${i})">✕</button></div>`).join('')}
-<div class="r">${g.kind==='s'||BRT[g.id]?`<select id="an-${g.id}" onchange="AN['${g.id}']=this.value">${(g.kind==='s'?shellTypes():BRT[g.id]).map(n=>`<option${n===AN[g.id]?' selected':''}>${esc(n)}</option>`).join('')}</select>`:`<input id="an-${g.id}" placeholder="סוג">`}<button class="b2" style="flex:0 0 52px;padding:8px 0" onclick="aqOpen('${g.id}')">${AQ[g.id]||1}</button><button class="b" onclick="addI('${g.id}')">הוסף</button><button class="b2" style="padding:6px 8px;font-size:13px;white-space:nowrap" onclick="fireOpen('${g.id}')">כמות שנורתה</button></div></div>`}).join('');
+<div class="r">${g.kind==='s'||BRT[g.id]?`<select id="an-${g.id}" onchange="AN['${g.id}']=this.value">${(g.kind==='s'?addTypes():BRT[g.id]).map(n=>`<option${n===AN[g.id]?' selected':''}>${esc(n)}</option>`).join('')}</select>`:`<input id="an-${g.id}" placeholder="סוג">`}<button class="b2" style="flex:0 0 52px;padding:8px 0" onclick="aqOpen('${g.id}')">${AQ[g.id]||1}</button><button class="b" onclick="addI('${g.id}')">הוסף</button><button class="b2" style="padding:6px 8px;font-size:13px;white-space:nowrap" onclick="fireOpen('${g.id}')">כמות שנורתה</button></div></div>`}).join('');
 const fl=S.ammo.fired.map((x,i)=>({x,i})).reverse().slice(0,40);
 return `<div class="c mu">⠿ גרור פגז לקטגוריה אחרת (פגז אחד בכל גרירה) • "כמות שנורתה" - דיווח ירי לפי סוג וכמות (יורד מהמלאי ונרשם ביומן) • ✕ גריעה מהמלאי</div>${sumCard()}${grp}
 <div class="c"><h2>ייצוא לוואטסאפ — תחמושת שנורתה</h2><div class="r"><label>תאריך</label><input type="date" value="${AD||yest()}" onchange="AD=this.value||null;render()"><button class="b2" onclick="AD=null;render()">אתמול</button></div><textarea id="amt" readonly style="min-height:90px">${esc(t)}</textarea><div class="r"><a class="b" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(t)}">שלח בוואטסאפ</a><button class="b2" onclick="cp('amt')">העתק</button></div></div>
