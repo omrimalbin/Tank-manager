@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ניהול טנק</title>
+<style>
+:root{--bg:#f3f4ee;--card:#fff;--tx:#1d2418;--mu:#677060;--ac:#4b5d2a;--on:#fff;--ac2:#e4e9d3;--bd:#d3d8c5;--rd:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141910;--card:#1e251a;--tx:#e8ecdf;--mu:#9aa58c;--ac:#9fb86a;--on:#141910;--ac2:#2b3523;--bd:#343e2b;--rd:#ff8a80}}
+:root[data-theme="dark"]{--bg:#141910;--card:#1e251a;--tx:#e8ecdf;--mu:#9aa58c;--ac:#9fb86a;--on:#141910;--ac2:#2b3523;--bd:#343e2b;--rd:#ff8a80}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;padding-bottom:40px}
+.w{max-width:640px;margin:0 auto;padding:10px}
+h1{font-size:20px;margin:6px 0 10px}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
+nav button{flex:0 0 auto;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:20px;font-size:15px}
+nav button.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}
+.c h2{font-size:15px;margin:0 0 8px;color:var(--mu)}
+.r{display:flex;gap:8px;align-items:center;margin:6px 0}
+.r>label{flex:0 0 70px;color:var(--mu);font-size:14px}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;min-width:0;flex:1}
+textarea{width:100%;min-height:150px;direction:rtl}
+button{font:inherit;cursor:pointer}
+.b{background:var(--ac);color:var(--on);border:0;border-radius:8px;padding:8px 14px}
+.b2{background:var(--ac2);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px 12px}
+.st{width:44px;height:40px;font-size:20px;flex:0 0 auto;padding:0}
+.x{background:none;border:0;color:var(--rd);font-size:18px;padding:2px 8px}
+.it{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)}
+.it:last-child{border:0}.it span{flex:1;word-break:break-word}
+.it.done span{text-decoration:line-through;color:var(--mu)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chips button{border:1px solid var(--bd);background:var(--bg);color:var(--tx);padding:8px 14px;border-radius:20px}
+.chips button.on{background:var(--ac);color:var(--on)}
+.rk{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--bd);cursor:pointer;font-weight:600}
+.sub{padding:4px 14px;color:var(--mu);font-size:14px}
+.mu{color:var(--mu);font-size:13px}
+input[type=checkbox]{flex:0 0 22px;width:22px;height:22px}
+.ghost{position:fixed;transform:translate(-50%,-130%);background:var(--ac);color:var(--on);padding:6px 14px;border-radius:8px;pointer-events:none;z-index:50;font-weight:600}
+.gc.hl{outline:3px solid var(--ac)}
+.hd{cursor:grab;touch-action:none;font-size:22px;padding:0 6px;flex:0 0 auto!important;color:var(--mu);user-select:none}
+.hl>circle,circle.hl{stroke:var(--ac)!important;stroke-width:3!important}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:12px}
+.md{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;padding:14px;max-width:420px;width:100%;max-height:90vh;overflow:auto}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;margin-top:6px}
+.cg i{font-style:normal;color:var(--mu);font-size:12px}
+.cd{border:0;background:var(--bg);color:var(--tx);border-radius:8px;padding:9px 0}
+.cd.m{background:var(--ac2)}.cd.e{background:var(--ac);color:var(--on)}
+.sm{flex:1;padding:9px 4px;font-size:14px;white-space:nowrap;text-align:center}
+</style></head><body><div class="w">
+<h1>🛡️ ניהול טנק</h1>
+<div id="tk"></div><nav id="nav"></nav><div id="app"></div><div id="modal"></div></div>
+<script>
+const KEY='tank-v1';
+const iso=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fd=s=>{if(!s)return'';const p=s.split('-');return p[2]+'.'+p[1]};
+const p2=n=>String(n).padStart(2,'0');
+const fdt=t=>{const d=new Date(t);return fd(iso(d))+'.'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes())};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const AM=[['t','18 טען','s',[['חצב',6],['חלול',6],['תקול',1],['אלומיניום',5]]],['c','18 מפקד','s',[['חצב',3],['חלול',7],['כלנית',2],['אלומיניום',6]]],['f','5פ','s',[['חצב',2],['חלול',1],['כלנית',2]]],['x','מסריחים','s',[]],['m','ברוסים מאג','b',[['צריח עילית',27],['צריח תחתית',8],['מסדרון אחורי',8]]],['h','ברוסים 0.5','b',[['ברוס 0.5',2]]]];
+const mkAm=full=>({g:AM.map(([id,name,kind,it])=>({id,name,kind,items:full?it.map(([n,q])=>({n,q})):[]})),fired:[],merged:true});
+const def=()=>({tzach:'423',crew:'קמיליון',locs:['חוף','דוגית'],loc:'חוף',shaam:4554,km:7987,diesel:900,
+faults:['מארז ב18 טען תקול (לא נכנס פגז) - מסתבר שהרכיבו אותו הפוך, צריך לפרק את המארזים ולתקן','זוהר תותח ומיקום עצמי נופל הרבה פעמים - ניתוק וחיבור j1 פותר את הבעייה לסירוגין','נורית חיווי ספקטרוניקס נהג לא עובדת','חסר קליפס 1 לאפיסקופ נהג','חסר גומי לאפיסקופ נהג מרכזי','משענת גב נהג לא מרופדת במלואה','רצועת מדף נהג מחוברת רק בבורג אחד למדף'],zivud:['עורפן מאג טען','נגע חולץ','לום','רצ׳ט','תאי זיווד 3+4','סלי תובה','חסר מטף כיבוי נהג'],kesher:[],klali:[],talat:'2026-10-22',tk:'2026-10-14',tafash:'2026-10-12',mtg:[],tItems:[],extras:[],stock:[],fixLog:[],req:{exit:[],gear:[],tank:[],gen:[],close:[]},ammo:mkAm(true)});
+const newT=()=>Object.assign(def(),{faults:[],zivud:[],talat:iso(),tk:iso(),tafash:iso(),ammo:mkAm(false)});
+let R,S;
+try{const raw=JSON.parse(localStorage.getItem('tank-v2')||localStorage.getItem(KEY)||'null');
+if(raw&&raw.tanks){R=raw;Object.keys(R.tanks).forEach(k=>{const o=R.tanks[k];R.tanks[k]=Object.assign(def(),o);if(!o.ammo)R.tanks[k].ammo=mkAm(k==='423');const hh=R.tanks[k].ammo.g.find(g=>g.id==='h');if(hh)hh.items.forEach(x=>{if(x.n==='ברוסים 0.5')x.n='ברוס 0.5'});R.tanks[k].req.gen=R.tanks[k].req.gen||[];R.tanks[k].req.close=R.tanks[k].req.close||[];['gear','tank'].forEach(q=>(R.tanks[k].req[q]||[]).forEach(x=>{if(x.st==='הוחלף')x.st='הושלם'}))})}
+else if(raw){const id=/^\d{3}$/.test(raw.tzach||'')?raw.tzach:'423';R={cur:id,tanks:{[id]:Object.assign(def(),raw)}}}}catch(e){}
+if(!R||!R.tanks||!Object.keys(R.tanks).length)R={cur:'423',tanks:{'423':def()}};
+if(!R.tanks[R.cur])R.cur=Object.keys(R.tanks)[0];
+Object.keys(R.tanks).forEach(k=>{const am=R.tanks[k].ammo;if(!am.g.some(g=>g.id==='x'))am.g.push({id:'x',name:'מסריחים',kind:'s',items:[]});
+if(!am.merged){const mp={},out=[];(am.fired||[]).forEach(x=>{const d=new Date(x.ts),key=[x.g,x.n,x.k,iso(d),d.getHours()].join('|');if(mp[key])mp[key].q+=x.q;else{mp[key]=Object.assign({},x);out.push(mp[key])}});am.fired=out;am.merged=true}});
+S=R.tanks[R.cur];
+R.dept=R.dept||{};R.dept.raw=R.dept.raw||'';R.dept.events=R.dept.events||[];R.dept.bad=R.dept.bad||[];delete R.dept.items;
+const save=()=>{try{localStorage.setItem('tank-v2',JSON.stringify(R))}catch(e){}};
+let tab='daily',sel=null,openWho=null,RD=null,MT=null,RS=false,DT=false,RT=false,RP=false,RDt=false,AD=null,EDF=null,EDX=null;
+const nowL=()=>{const d=new Date();return iso(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())};
+const WHO=['מלבין','ליעד','גברי','זאב'];
+const TABS={daily:'דוח יומי',tf:'טפ"ש',ex:'טיפולים נוספים',stock:'מלאי זיווד',full:'דוח מלא',req:'בקשות צוות',ammo:'דוח תחמושת',sched:'לוז יומי',mtg:'מתג 24'};
+
+function datesBlock(){const l=[];if(S.talat)l.push('טלת מלא - '+fd(S.talat));if(S.tk)l.push('תכ. - '+fd(S.tk));if(S.tafash)l.push('טפש - '+fd(S.tafash));return l.length?'\n\n'+l.join('\n'):''}
+function daily(){
+return `${fd(RD||iso())}\nצ ${R.cur}\nמיקום ${S.loc}\nצוות ${S.crew}\n\nשע"מ ${S.shaam}\nק"מ ${S.km}\nסולר ${S.diesel}\n\nתקלות:\n${S.faults.map(x=>'• '+x).join('\n')}\n\nפערי זיווד:\n${S.zivud.join('\n')}\n\nפערים קשר:\n${S.kesher.join('\n')}\n\nפערים כללי:\n${S.klali.join('\n')}${datesBlock()}`}
+function tfRep(){return `דוח טפ"ש${S.tafash?' - '+fd(S.tafash):''}\n`+(S.tItems.length?S.tItems.map(x=>(x.done?'✔ ':'✘ ')+x.t).join('\n'):'(אין פריטים)')}
+function exRep(){return 'טיפולים נוספים שבוצעו:\n'+(S.extras.length?exOrd().map(({x})=>`• ${x.t} - ${fd(x.d)}`).join('\n'):'(אין פריטים)')}
+const full=()=>daily()+'\n\n――――――――\n\n'+tfRep()+'\n\n――――――――\n\n'+exRep()+'\n\n――――――――\n\n'+fixRep()+'\n\n――――――――\n\n'+ammoRep();
+
+function parse(t){
+t=t.replace(/[\u200e\u200f\u2060\u202a-\u202e]/g,'');
+const map={'תקלות':'faults','פערי זיווד':'zivud','פערים קשר':'kesher','פערים כללי':'klali'};
+const n={faults:[],zivud:[],kesher:[],klali:[]},o={talat:'',tk:'',tafash:''},yr=new Date().getFullYear();
+const dt=v=>{const m=v.match(/(\d{1,2})\.(\d{1,2})/);return m?yr+'-'+p2(m[2])+'-'+p2(m[1]):null};
+let sec=null,m;
+for(const raw0 of t.split('\n')){const raw=raw0.trim();if(!raw)continue;
+const h=raw.replace(/:$/,'');
+if(raw.endsWith(':')&&map[h]){sec=map[h];continue}
+if(/^טלת מלא/.test(raw)){o.talat=dt(raw)||'';sec=null;continue}
+if(/^תכ\./.test(raw)){o.tk=dt(raw)||'';sec=null;continue}
+if(/^טפש/.test(raw)){o.tafash=dt(raw)||'';sec=null;continue}
+if(sec===null){
+if(m=raw.match(/^צ\s+(.+)$/)){o.tzach=m[1];continue}
+if(m=raw.match(/^מיקום\s+(.+)$/)){o.loc=m[1];continue}
+if(m=raw.match(/^צוות\s+(.+)$/)){o.crew=m[1];continue}
+if(m=raw.match(/^שע["״]מ\s+(\d+)/)){o.shaam=+m[1];continue}
+if(m=raw.match(/^ק["״]מ\s+(\d+)/)){o.km=+m[1];continue}
+if(m=raw.match(/^סולר\s+(\d+)/)){o.diesel=+m[1];continue}
+continue}
+n[sec].push(raw.replace(/^[•\-–*·\s]+/,''));
+}
+if(o.tzach){const id=o.tzach.trim();if(/^\d{3}$/.test(id)){if(!R.tanks[id])R.tanks[id]=newT();R.cur=id;S=R.tanks[id]}delete o.tzach}
+Object.keys(o).forEach(k=>{if(o[k]!=null)S[k]=o[k]});
+Object.assign(S,n);
+if(S.loc&&!S.locs.includes(S.loc))S.locs.push(S.loc);
+save();render();
+}
+
+function cp(id){const e=document.getElementById(id);e.focus();e.select();
+try{navigator.clipboard.writeText(e.value).catch(()=>document.execCommand('copy'))}catch(x){document.execCommand('copy')}
+const b=event.target,t=b.textContent;b.textContent='✓ הועתק';setTimeout(()=>b.textContent=t,1200)}
+const val=id=>document.getElementById(id).value.trim();
+function clrDates(){if(!RDt){RDt=true;render();return}S.talat='';S.tk='';S.tafash='';RDt=false;save();render()}
+function setF(k,v){S[k]=v;save();if(k==='tafash'||k==='tf')render();else upd()}
+function setN(k,v){S[k]=parseInt(v)||0;save();render()}
+function st(k,d){S[k]=(S[k]||0)+d;save();render()}
+function addL(k){const v=val('in-'+k);if(!v)return;S[k].push(v);save();render()}
+function delL(k,i){const v=S[k].splice(i,1)[0];
+if(k==='zivud'){const n=nm(v);if(n&&!S.stock.some(x=>nm(x)===n))S.stock.push(n)}
+if(k==='faults'){const ts=Date.now();const e=S.fixLog.find(x=>x.t===v&&x.status==='לא נפתר');
+if(e){e.status='נפתר';e.hist.push({st:'נפתר',ts})}else S.fixLog.push({t:v,status:'נפתר',hist:[{st:'נפתר',ts}]})}
+EDF=null;save();render()}
+function editF(i){EDF=i;render()}
+function saveF(i){const v=val('ef');if(v){const old=S.faults[i];S.faults[i]=v;S.fixLog.forEach(e=>{if(e.t===old&&e.status==='לא נפתר')e.t=v})}EDF=null;save();render()}
+function setFix(i,st){const e=S.fixLog[i];if(e.status===st)return;e.status=st;e.hist.push({st,ts:Date.now()});
+if(st==='לא נפתר'){if(!S.faults.includes(e.t))S.faults.push(e.t)}else S.faults=S.faults.filter(x=>x!==e.t);save();render()}
+function setWhy(i,j,v){S.fixLog[i].hist[j].why=v.trim();save()}
+function editFix(i){EDX=i;render()}
+function saveFix(i){const v=val('efx');if(v){const e=S.fixLog[i],old=e.t;e.t=v;if(e.status==='לא נפתר')S.faults=S.faults.map(x=>x===old?v:x)}EDX=null;save();render()}
+function delFix(i){S.fixLog.splice(i,1);save();render()}
+const lastTs=e=>e.hist.length?e.hist[e.hist.length-1].ts:0;
+const exOrd=()=>S.extras.map((x,i)=>({x,i})).sort((a,b)=>b.x.d.localeCompare(a.x.d)||b.i-a.i);
+const fxOrd=()=>S.fixLog.map((e,i)=>({e,i})).sort((a,b)=>lastTs(b.e)-lastTs(a.e)||b.i-a.i);
+function fixRep(){return 'תקלות שטופלו:\n'+(S.fixLog.length?fxOrd().map(({e})=>`• ${e.t}\n`+e.hist.map(h=>`   ${h.st} - ${fdt(h.ts)}`+(h.why?`\n   סיבה: ${h.why}`:'')).join('\n')).join('\n'):'(אין פריטים)')}
+const RQ={exit:['בקשות יציאה','שלום לושינסקי, להלן בקשות יציאה עדכניים לצוות:',['בהמתנה','אושרה','לא אושרה','בוטל']],gear:['ציוד בלאי - צוות','רס"פ יקר, להלן בקשות הצוות להחלפת בלאי:',['בהמתנה','חסר','בהכנה','יצא להפצה','מוכן לאיסוף','הושלם','בוטל']],tank:['ציוד טנקאי בלאי','רס"פ יקר, להלן כלים טנקאיים להחלפת בלאי:',['בהמתנה','הושלם','בוטל']],gen:['ציוד כללי','רס"פ יקר, להלן בקשות לציוד כללי:',['בהמתנה','הושלם','בוטל']],close:['בקשות סגירה','',['בהמתנה','אושרה','לא אושרה','בוטל']]};
+const REQW=['זאב','ליעד','גברי','מלבין'];
+const fdf=s=>{const p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2)};
+const rl=(k,x)=>(k==='exit'||k==='close')&&x.who?`${x.who}: ${fdf(x.from)}-${fdf(x.to)}`:x.t;
+const fts=t=>{const d=new Date(t);return fdf(iso(d))+' '+p2(d.getHours())+':'+p2(d.getMinutes())};
+const SG={exit:'שלום לושינסקי, להלן בקשת יציאה עדכנית לצוות:',gear:'רס"פ יקר, להלן בקשת הצוות להחלפת בלאי:',tank:'רס"פ יקר, להלן כלי טנקאי להחלפת בלאי:',gen:'רס"פ יקר, להלן בקשה לציוד כללי:'};
+const intro=(k,n)=>((n===1&&SG[k])||RQ[k][1]).replace('רס"פ יקר,','שלום '+(R.rasap||'רביב')+',');
+const stk=n=>n===1?'נבקש לעדכן האם הפריט קיים במלאי.':'נבקש לעדכן האם הפריטים קיימים במלאי.';
+const listMsg=(k,xs)=>{const n=xs.length;if(k==='gear'){const by={};xs.forEach(x=>(by[x.who||'']=by[x.who||'']||[]).push(x.t));return intro('gear',n)+'\n'+[...REQW,''].filter(w=>by[w]).map(w=>(w?w+':\n':'')+by[w].map(t=>'• '+t).join('\n')).join('\n')+'\n'+stk(n)}
+return intro(k,n)+'\n'+xs.map(x=>'• '+rl(k,x)+((k==='exit'||k==='close')&&x.why?' - סיבה: '+x.why:'')).join('\n')+'\n'+(k==='exit'?(n===1?'נבקש לעדכן האם הבקשה מאושרת.':'נבקש לעדכן האם הבקשות מאושרות.'):stk(n))};
+const msgGear=()=>listMsg('gear',S.req.gear.filter(x=>x.sel));
+const msgK=k=>listMsg(k,S.req[k].filter(x=>x.sel));
+const rsel=k=>S.req[k].filter(x=>x.sel).map(x=>'• '+rl(k,x)).join('\n');
+const msgExit=()=>listMsg('exit',S.req.exit.filter(x=>x.sel));
+const msgWear=()=>{const g=rsel('gear'),t=rsel('tank');if(g&&t)return RQ.gear[1]+'\n'+g+'\n\nלהלן כלים טנקאיים להחלפת בלאי:\n'+t;return t?RQ.tank[1]+'\n'+t:RQ.gear[1]+'\n'+g};
+function addR(k){const o={st:'בהמתנה',sel:false};
+if(k==='exit'){o.who=val('rw-exit');o.from=val('rf-exit')||iso();o.to=val('rt-exit')||o.from}
+else{const v=val('rq-'+k);if(!v)return;o.t=v;if(k==='gear')o.who=val('rw-gear')}
+S.req[k].push(o);save();render()}
+function togR(k,i){S.req[k][i].sel=!S.req[k][i].sel;save();render()}
+function stR(k,i,v){if(v==='בוטל'){cancelOpen(k,i);render();return}if(v==='בהכנה'&&k==='gear'){etaOpen(k,i);render();return}const a=S.req[k],x=a[i],tg=x.sel?a.filter(y=>y.sel):[x],ch=[];
+tg.forEach(y=>{if(y.st!==v)ch.push([k,a.indexOf(y),y]);y.st=v;delete y.cwhy;if(v!=='בהכנה')delete y.eta});save();render();if(ch.length)notifyModal(ch)}
+let TX=null;
+function etaOpen(k,i){const a=S.req[k],x=a[i],d=new Date();d.setMinutes(Math.ceil((d.getMinutes()+1)/30)*30,0,0);
+TX={k,ids:x.sel?a.map((y,j)=>y.sel?j:-1).filter(j=>j>=0):[i],t:x.eta||(p2(d.getHours())+':'+p2(d.getMinutes()))};txR()}
+function txR(){const el=document.getElementById('modal');if(!TX){el.innerHTML='';return}
+el.innerHTML=`<div class="ov"><div class="md" style="max-width:300px"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">בהכנה — שעת הגעה${TX.ids.length>1?` (${TX.ids.length} פריטים)`:''}</h2><div class="r"><label>שעה</label><input type="time" value="${TX.t}" oninput="TX.t=this.value"></div><div class="r" style="margin-top:12px"><button class="b" style="flex:1" onclick="txOk()">אישור</button><button class="b2" onclick="TX=null;txR();render()">ביטול</button></div></div></div>`}
+function txOk(){if(!TX.t)return;const a=S.req[TX.k],ch=[];TX.ids.forEach(j=>{const y=a[j];if(y.st!=='בהכנה'||y.eta!==TX.t)ch.push([TX.k,j,y]);y.st='בהכנה';y.eta=TX.t;delete y.cwhy});TX=null;save();txR();render();if(ch.length)notifyModal(ch)}
+let CX=null;
+function cancelOpen(k,i){const a=S.req[k],x=a[i];CX={k,ids:x.sel?a.map((y,j)=>y.sel?j:-1).filter(j=>j>=0):[i],why:''};cxR()}
+function cxR(){const el=document.getElementById('modal');if(!CX){el.innerHTML='';return}
+el.innerHTML=`<div class="ov"><div class="md"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">ביטול בקשה${CX.ids.length>1?` (${CX.ids.length})`:''}</h2><div class="r"><input placeholder="סיבת הביטול (חובה)" value="${esc(CX.why)}" oninput="CX.why=this.value"></div><div class="r" style="margin-top:12px"><button class="b" style="flex:1" onclick="cxOk()">אישור ביטול</button><button class="b2" onclick="CX=null;cxR();render()">חזרה</button></div></div></div>`}
+function cxOk(){const why=(CX.why||'').trim();if(!why)return;const a=S.req[CX.k],ch=[];CX.ids.forEach(j=>{const y=a[j];if(y.st!=='בוטל')ch.push([CX.k,j,y]);y.st='בוטל';y.cwhy=why});CX=null;save();cxR();render();if(ch.length)notifyModal(ch)}
+function notifyModal(items){const k0=items[0][0],st=items[0][2].st,secs=[];
+if((st==='בהמתנה'||st==='בוטל')&&k0!=='close'){const xs=items.map(t=>t[2]),m=st==='בוטל'?cancelAuth(k0,xs):listMsg(k0,xs),rs=R.rasap||'רביב';
+secs.push(k0==='exit'?{m,who:'לושינסקי',to:'לושינסקי',refs:items}:{m,who:rs,to:rs,refs:items})}
+const g={};items.forEach(t=>{if(t[2].who)(g[t[2].who]=g[t[2].who]||[]).push(t)});
+Object.keys(g).forEach(w=>secs.push({m:k0==='close'?(st==='בהמתנה'?cMsg(w,g[w]):st==='בוטל'?cCancel(w,g[w]):cAck(w,g[w])):sMsg(w,g[w]),who:w,to:w,refs:g[w]}));
+if(!secs.length)return;showSecs('שליחת הודעות — '+st,secs)}
+function sent(to,refs){const ts=Date.now();refs.forEach(q=>{const [k,i]=q.split(':'),x=S.req[k][+i];if(x)(x.log=x.log||[]).push({to,ts,st:x.st})});Object.keys(S.req).forEach(k=>S.req[k].forEach(x=>x.sel=false));save();setTimeout(render,300)}
+function sendModal(title,g,fn){fn=fn||sMsg;showSecs(title,Object.keys(g).map(w=>({m:fn(w,g[w]),who:w,to:w,refs:g[w]})))}
+let NM=null;
+function showSecs(title,secs){NM={n:secs.length,d:{}};document.getElementById('modal').innerHTML=`<div class="ov"><div class="md"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">${title}</h2>${secs.map((c,i)=>`<div class="mu" style="white-space:pre-wrap;background:var(--bg);padding:8px;border-radius:8px;font-size:15px;color:var(--tx)">${esc(c.m)}</div><div class="r" style="margin-bottom:10px"><a id="nm${i}" class="b" style="text-decoration:none" target="_blank" rel="noopener" href="${waLink(c.m,c.who)}" onclick="sent('${c.to}',${refsOf(c.refs)});nmOk(${i})">שלח ל${c.to}</a></div>`).join('')}<div class="mu" style="font-size:12px">החלון ייסגר אוטומטית לאחר שליחה לכולם.</div><div class="r"><button class="b2" style="font-size:13px;opacity:.7" onclick="closeM()">סגור בלי לשלוח</button></div></div></div>`}
+function nmOk(i){setTimeout(()=>{const a=document.getElementById('nm'+i);if(!a||!NM)return;a.textContent='✓ נשלח';a.style.opacity='.5';a.style.pointerEvents='none';NM.d[i]=1;if(Object.keys(NM.d).length>=NM.n)setTimeout(closeM,500)},80)}
+function statusModal(ks){sendModal('שליחת סטטוס',stGroups(ks))}
+function setRasap(v){R.rasap=v;save();render()}
+function clrSel(){Object.keys(S.req).forEach(k=>S.req[k].forEach(x=>x.sel=false));save();render()}
+function delR(k,i){S.req[k].splice(i,1);save();render()}
+function allR(k){const a=S.req[k],v=!a.every(x=>x.sel);a.forEach(x=>x.sel=v);save();render()}
+const waLink=(m,who)=>{let p=((R.phones||{})[who]||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return 'https://wa.me/'+p+'?text='+encodeURIComponent(m)};
+function setPh(w,v){R.phones=R.phones||{};R.phones[w]=v.trim();save();render()}
+const gs=(st,n,eta)=>{const m=n.length>1,l=n.join(', ');
+return st==='הושלם'?(m?`הפריטים שביקשת (${l}) נמסרו בהצלחה.`:`הפריט (${l}) נמסר בהצלחה.`)
+:st==='חסר'?(m?`הפריטים (${l}) חסרים ויימסרו כאשר יהיו במלאי.`:`הפריט (${l}) חסר ויימסר כאשר יהיה במלאי.`)
+:st==='בהכנה'?(m?`הפריטים (${l}) בהכנה ויגיעו אליך בשעה ${eta}.`:`הפריט (${l}) בהכנה ויגיע אליך בשעה ${eta}.`)
+:st==='יצא להפצה'?(m?`הפריטים (${l}) יצאו להפצה והם בדרך אליך.`:`הפריט (${l}) יצא להפצה והוא בדרך אליך.`)
+:st==='מוכן לאיסוף'?(m?`הפריטים (${l}) מוכנים לאיסוף אצל המפקד, יש להגיע לאסוף.`:`הפריט (${l}) מוכן לאיסוף אצל המפקד, יש להגיע לאסוף.`)
+:(m?`בקשותיך לציוד (${l}) הועברו ונמצאות בטיפול.`:`בקשת הציוד (${l}) הועברה ונמצאת בטיפול.`)};
+const sent1=(k,x)=>{if(k==='exit'){const d=`(${fdf(x.from)}-${fdf(x.to)}${x.why?', סיבה: '+x.why:''})`;
+if(x.st==='בוטל')return `בקשת היציאה שלך (${fdf(x.from)}-${fdf(x.to)}) בוטלה. סיבה: ${x.cwhy}.`;
+return x.st==='אושרה'?`בקשת היציאה שלך ${d} אושרה.`:x.st==='לא אושרה'?`בקשת היציאה שלך ${d} לא אושרה.`:`בקשת היציאה שלך ${d} הועברה ונמצאת בטיפול.`}
+return x.st==='בוטל'?`בקשת הציוד (${x.t}) בוטלה. סיבה: ${x.cwhy}.`:gs(x.st,[x.t],x.eta)};
+const etaLines=xs=>{const by={};xs.forEach(x=>(by[x.eta||'']=by[x.eta||'']||[]).push(x.t));return Object.keys(by).map(e=>gs('בהכנה',by[e],e)).join('\n')};
+const sMsg=(w,it)=>{let t;
+if(it.every(x=>x[0]==='gear')){const by={};it.forEach(x=>(by[x[2].st]=by[x[2].st]||[]).push(x[2]));t=`שלום ${w},\n`+Object.keys(by).map(st=>st==='בוטל'?by[st].map(x=>`בקשת הציוד (${x.t}) בוטלה. סיבה: ${x.cwhy}.`).join('\n'):st==='בהכנה'?etaLines(by[st]):gs(st,by[st].map(x=>x.t))).join('\n')}
+else t=it.length===1?`שלום ${w},\n${sent1(it[0][0],it[0][2])}`:`שלום ${w},\n`+it.map(([k,,x])=>'• '+sent1(k,x)).join('\n');
+if(it.some(([k,,x])=>k==='exit'&&x.st==='לא אושרה'))t+=`\nלשאלות ובירורים נוספים, אנא פנה לשירות לקוחות המפל"ג.`;
+return t};
+const dts=it=>it.map(([,,x])=>`${fdf(x.from)}-${fdf(x.to)}${x.why?' (סיבה: '+x.why+')':''}`).join(', ');
+const cMsg=(w,it)=>`שלום ${w}, לאור שינויים לא מתוכננים, נבקש את עזרתך בסגירה בתאריכים ${dts(it)}. נא להקיש 1 לאישור.`;
+const cAck=(w,it)=>it[0][2].st==='אושרה'?`שלום ${w}, תודה על אישורך לסגירה בתאריכים ${dts(it)}.`:`שלום ${w}, התקבלה תשובתך לגבי הסגירה בתאריכים ${dts(it)}: לא אושרה.`;
+const cCancel=(w,it)=>`שלום ${w}, בקשת הסגירה בתאריכים ${it.map(([,,x])=>`${fdf(x.from)}-${fdf(x.to)}`).join(', ')} בוטלה. סיבה: ${it[0][2].cwhy}.`;
+const cancelAuth=(k,xs)=>{const rcp=k==='exit'?'לושינסקי':(R.rasap||'רביב'),n=xs.length;
+return `שלום ${rcp}, ${n===1?'בקשה אחת בוטלה':'הבקשות הבאות בוטלו'}:\n`+xs.map(x=>'• '+(k==='exit'?rl(k,x):k==='gear'?(x.who?x.who+': ':'')+x.t:x.t)+' - סיבת הביטול: '+x.cwhy).join('\n')};
+const refsOf=it=>JSON.stringify(it.map(([k,i])=>k+':'+i)).replace(/"/g,"'");
+function stGroups(ks){const g={};ks.forEach(k=>S.req[k].forEach((x,i)=>{if(x.sel&&x.who)(g[x.who]=g[x.who]||[]).push([k,i,x])}));return g}
+function reqClose(){sendModal('בקשת סגירה',stGroups(['close']),cMsg)}
+function closeBtn(){const g=stGroups(['close']),ws=Object.keys(g),c=ws.reduce((n,w)=>n+g[w].length,0);
+if(ws.length>1)return `<button class="b sm" onclick="reqClose()">שלח בקשה (${c})</button>`;
+const w=ws[0];return `<a class="b sm" style="text-decoration:none;${c?'':'opacity:.5;pointer-events:none'}" target="_blank" rel="noopener" href="${c?waLink(cMsg(w,g[w]),w):'#'}" ${c?`onclick="sent('${w}',${refsOf(g[w])})"`:''}>שלח בקשה (${c})</a>`}
+function statusBtn(ks){const g=stGroups(ks),ws=Object.keys(g),c=ws.reduce((n,w)=>n+g[w].length,0);
+if(ws.length>1)return `<button class="b sm" onclick="statusModal(['${ks.join("','")}'])">שלח סטטוס (${c})</button>`;
+const w=ws[0];return `<a class="b sm" style="text-decoration:none;${c?'':'opacity:.5;pointer-events:none'}" target="_blank" rel="noopener" href="${c?waLink(sMsg(w,g[w]),w):'#'}" ${c?`onclick="sent('${w}',${refsOf(g[w])})"`:''}>שלח סטטוס (${c})</a>`}
+const DDATE=/(\d{1,2})([./])(\d{1,2})(?:\2(\d{2,4}))?/g;
+const yf=(d,m,y)=>{const T=new Date();if(y){y=+y;return y<100?2000+y:y}let b=T.getFullYear(),bd=1e18;[b-1,b,b+1].forEach(c=>{const x=Math.abs(new Date(c,m-1,d)-T);if(x<bd){bd=x;b=c}});return b};
+const dIso=(d,m,y)=>yf(+d,+m,y)+'-'+p2(+m)+'-'+p2(+d);
+const WDAY=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const wdOf=iso=>{const p=iso.split('-');return 'יום '+WDAY[new Date(+p[0],+p[1]-1,+p[2]).getDay()]};
+const HT=/[֐-׿"׳']/;
+function deptLocs(text){const toks=text.replace(/[^֐-׿\s]/g,' ').split(/\s+/).filter(Boolean),forms={};
+const bad=t=>/חליף|חליפה|חליפים/.test(t)||/^(?:ב|ל|מ|ו|ה)?(?:צוות|טנק|חזרה|ביחד|יחד)$/.test(t);
+toks.forEach(t=>{if(t.length<5||bad(t))return;(forms[t]=forms[t]||{}).x=1;if('בלמהו'.includes(t[0])){const b=t.slice(1);(forms[b]=forms[b]||{})[t]=1}});
+const L={};Object.keys(forms).forEach(b=>{const fs=Object.keys(forms[b]).filter(k=>k!=='x');const alone=forms[b].x;if(fs.length+(alone?1:0)>=2)fs.forEach(t=>{if(t[0]&&'בלמ'.includes(t[0])&&t.slice(1)===b)L[t]=b})});return L}
+function deptEvent(txt,L){let t=txt.trim();const men=[];t=t.replace(/@⁨([^⁩]*)⁩/g,(m,n)=>{men.push(n.trim());return ''}).replace(/[⁦-⁩]/g,'').replace(/\(\s*\)/g,'').replace(/\s+/g,' ').trim();
+const toks=t.split(' '),tl=w=>w.replace(/[.,;:()]+$/,'').replace(/^[(]+/,'');
+const STOP=/^(?:שיחבור|שיחבר|שיעבור|שיצטרף|שיצא|עם|יחד|אנא|כדי|בצוות|לצוות)$/;
+const isLoc=w=>L[tl(w)];
+const nameFrom=(arr,k)=>{const o=[];for(let n=k;n<arr.length&&o.length<(arr[k]==='צוות'?2:2);n++){const w=arr[n];if(STOP.test(tl(w))||isLoc(w)||/^\(/.test(w)&&o.length)break;o.push(tl(w));if(/[.,;)]$/.test(w))break}return o.join(' ')};
+let inn=[],out=[],loc='';
+const sm=t.match(/^(.+?)\s+(?:ייכנס|יכנס|נכנס|נכנסת|נכנסים|עובר|עוברת|מחליף|מחליפה|מחליפים|יחליף)(?=\s|$|[.,])/);
+if(sm&&sm[1].split(' ').length<=4)inn.push(sm[1].replace(/^[•*\-–\s]+/,''));
+const om=t.match(/(?:במקום|[ו]?(?:[מי]|לה)(?:חליף|חליפה|חליפים)\s+את)\s+/);
+if(om){const rest=t.slice(om.index+om[0].length).split(' ');const nm=nameFrom(rest,0);if(nm)out.push(nm)}
+const jm=t.match(/(?:ביחד|יחד) עם\s+/);
+if(jm){const rest=t.slice(jm.index+jm[0].length).split(' ');const nm=nameFrom(rest,0);if(nm)inn.push(nm)}
+const to=[],from=[];toks.forEach((w,k)=>{const x=tl(w),b=L[x];if(!b)return;const num=/^\d+[.,]?$/.test(toks[k+1]||'')?' '+tl(toks[k+1]):'';(x[0]==='מ'?from:to).push(b+num)});
+loc=(from[0]?from[0]+' ← ':'')+(to[0]||'');if(!to[0]&&from[0])loc=from[0];
+return{text:t,in:inn,out:out,loc,note:men.join(', ')}}
+function parseDept(raw){const text=raw.replace(/[‎‏⁠‪-‮]/g,'');const L=deptLocs(text.replace(/@⁨[^⁩]*⁩/g,' '));
+const ev=[],bad=[];let cur=null;
+text.split('\n').forEach(line0=>{const line=line0.trim();if(!line)return;
+const bm=line.match(/^[*•\-–·]\s+(.*)$/);
+if(!bm){const ds=[...line.matchAll(DDATE)].filter(m=>+m[1]>=1&&+m[1]<=31&&+m[3]>=1&&+m[3]<=12);
+if(ds.length){cur=dIso(ds[0][1],ds[0][3],ds[0][4]);return}
+if(cur&&ev.length&&ev[ev.length-1].date===cur&&!/[:：]$/.test(line)){const e=ev[ev.length-1];Object.assign(e,deptEvent(e.text+' '+line,L),{date:cur});return}
+if(!/[:：]$/.test(line))bad.push(line0.trim());return}
+if(!cur){bad.push(line0.trim());return}
+ev.push(Object.assign(deptEvent(bm[1],L),{date:cur}))});
+return{events:ev,bad}}
+function deptLoad(){const t=document.getElementById('dpt').value;if(!t.trim())return;const p=parseDept(t);R.dept={raw:t,events:p.events,bad:p.bad};save();render()}
+let DC=false;
+function deptClear(){if(!DC){DC=true;render();return}DC=false;R.dept={raw:'',events:[],bad:[]};save();render()}
+function deptDel(i){R.dept.events.splice(i,1);save();render()}
+function deptFile(inp){const fl=inp.files&&inp.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{document.getElementById('dpt').value=rd.result};rd.readAsText(fl)}
+const nextD=()=>{const d=new Date();d.setDate(d.getDate()+1);return iso(d)};
+const deptSum=e=>{const p=[];e.in.forEach(n=>p.push('🟢 נכנס: <b>'+esc(n)+'</b>'));e.out.forEach(n=>p.push('🔴 יוצא: <b>'+esc(n)+'</b>'));if(e.loc)p.push('📍 '+esc(e.loc));return p.join('<br>')};
+function deptHtml(day,label){const a=R.dept.events.filter(e=>e.date===day);if(!a.length)return'';
+return `<div style="font-weight:700;margin:10px 0 4px;color:var(--ac)">${label} — ${wdOf(day)} ${fdf(day)}</div>`+a.map(e=>{const sm=deptSum(e);return `<div style="padding:5px 0;border-bottom:1px dashed var(--bd)">${sm?sm+`<div class="mu" style="font-size:13px">${esc(e.text)}</div>`:esc(e.text)}${e.note?`<div class="mu" style="font-size:13px">📌 ${esc(e.note)}</div>`:''}</div>`}).join('')}
+function deptModal(force){const h=deptHtml(iso(),'היום')+deptHtml(nextD(),'מחר');if(!h&&!force)return;
+document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md"><h2 style="margin:0 0 6px;font-size:17px;color:var(--tx)">חילופים — היום ומחר</h2>${h||'<div class="mu">אין חילופים היום או מחר.</div>'}<div class="r" style="margin-top:12px"><button class="b" style="flex:1" onclick="closeM()">סגור</button></div></div></div>`}
+function deptAlert(){const D=R.dept;if(!D||!D.events||!D.events.length)return;const T=iso();if(R.deptSeen===T)return;R.deptSeen=T;save();deptModal(false)}
+function deptCard(){const D=R.dept,T=iso(),T2=nextD();
+const evs=D.events.map((e,i)=>Object.assign({i},e));
+const days=[...new Set(evs.map(e=>e.date))].sort();
+const one=e=>{const sm=deptSum(e);return `<div style="padding:8px 0;border-bottom:1px solid var(--bd);display:flex;gap:8px;align-items:flex-start"><div style="flex:1">${sm?sm+`<div class="mu" style="font-size:13px;margin-top:2px">${esc(e.text)}</div>`:esc(e.text)}${e.note?`<div class="mu" style="font-size:13px">📌 ${esc(e.note)}</div>`:''}</div><button class="x" style="padding:0 6px" onclick="deptDel(${e.i})">✕</button></div>`};
+const dayBlk=d=>`<div style="font-weight:700;margin:12px 0 2px;color:var(--ac)">${d===T?'היום · ':d===T2?'מחר · ':''}${wdOf(d)} ${fdf(d)}</div>`+evs.filter(e=>e.date===d).map(one).join('');
+const past=days.filter(d=>d<T),fut=days.filter(d=>d>=T);
+const body=evs.length?fut.map(dayBlk).join('')+(past.length?`<details style="margin-top:10px"><summary class="mu">ימים שעברו (${past.length})</summary>${past.map(dayBlk).join('')}</details>`:''):'<div class="mu">לא נטענו יציאות. הדבק טקסט למטה.</div>';
+return `<div class="c"><h2>יציאות מחלקה</h2><div class="r" style="flex-wrap:wrap"><button class="b2" style="flex:1" onclick="deptModal(true)">חילופים להיום ולמחר</button></div><div style="max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--bd);border-radius:10px;padding:0 10px;margin-top:8px">${body}</div>
+${D.bad&&D.bad.length?`<details style="margin-top:10px"><summary class="mu">שורות שלא שויכו לתאריך (${D.bad.length})</summary>${D.bad.map(b=>`<div class="mu" style="padding:2px 0">${esc(b)}</div>`).join('')}</details>`:''}
+<details style="margin-top:12px"${evs.length?'':' open'}><summary style="cursor:pointer">העלאת טקסט (דורס את הקיים)</summary><textarea id="dpt" placeholder="הדבק כאן את ההודעה: כותרת עם תאריך (למשל יום רביעי 4.11:) ומתחתיה שורות עם *" style="min-height:130px;margin-top:6px">${esc(D.raw||'')}</textarea><div class="r"><input type="file" accept=".txt,text/plain" onchange="deptFile(this)" style="font-size:13px"></div><div class="r"><button class="b" style="flex:1" onclick="deptLoad()">טען</button><button class="b2" onclick="deptClear()">${DC?'בטוח? לחץ שוב':'נקה הכל'}</button></div></details></div>`}
+function reqView(){
+const row=(k,x,i)=>{const ec=(k==='exit'||k==='close')&&x.who,dn=(x.st==='הושלם'||x.st==='בוטל')?'done':'';
+const sel=(w)=>`<select style="flex:0 0 ${w}px;${w<100?'font-size:14px;padding:6px 2px':''}" onchange="stR('${k}',${i},this.value)">${RQ[k][2].map(o=>`<option${o===x.st?' selected':''}>${o}</option>`).join('')}</select>`;
+const logs=(x.st==='בהכנה'&&x.eta?`<div class="mu" style="font-size:13px;padding:0 32px 4px 0">יגיע בשעה ${x.eta} <button class="x" style="color:var(--mu);font-size:14px;padding:0 4px" onclick="etaOpen('${k}',${i});render()">✎</button></div>`:'')+(x.cwhy?`<div class="mu" style="font-size:13px;padding:0 32px 4px 0">סיבת ביטול: ${esc(x.cwhy)}</div>`:'')+(x.log||[]).map(l=>`<div class="mu" style="font-size:12px;padding:0 32px 4px 0">נשלח ל${esc(l.to)}: ${fts(l.ts)}${l.st?' סטטוס: '+l.st:''}</div>`).join('');
+const cb=`<input type="checkbox" ${x.sel?'checked':''} onchange="togR('${k}',${i})">`,del=`<button class="x" onclick="delR('${k}',${i})">✕</button>`;
+if(ec)return `<div style="border-bottom:1px dashed var(--bd);padding:4px 0"><div class="it" style="border:0;padding:2px 0">${cb}<span style="white-space:nowrap;font-size:15px">${fdf(x.from)}-${fdf(x.to)}</span>${sel(90)}${del}</div>${x.why?`<div style="font-size:15px;padding:0 30px 2px 0">סיבה: ${esc(x.why)}</div>`:''}${logs}</div>`;
+return `<div style="border-bottom:1px solid var(--bd)"><div class="it ${dn}" style="border:0">${cb}<span>${esc(rl(k,x))}</span>${sel(112)}${del}</div>${logs}</div>`};
+const card=(k,btns)=>{const a=S.req[k];let rows;
+if(k==='gear'||k==='exit'||k==='close')rows=[...REQW,...new Set(a.map(x=>x.who||'').filter(w=>!REQW.includes(w)))].map(w=>{const ix=a.map((x,i)=>i).filter(i=>(a[i].who||'')===w);return ix.length?`<div style="font-weight:700;margin:10px 0 2px;color:var(--ac)">${w||'ללא שם'}</div>`+ix.map(i=>row(k,a[i],i)).join(''):''}).join('');
+else rows=a.map((x,i)=>row(k,x,i)).join('');
+return `<div class="c"><h2>${RQ[k][0]}</h2>${rows}<div class="r" style="gap:6px;flex-wrap:nowrap;margin-top:10px">${btns}</div></div>`};
+const cnt=k=>S.req[k].filter(x=>x.sel).length;
+const rs=R.rasap||'רביב';
+const reqBtn=(k,m,to,who)=>{const c=cnt(k),refs=JSON.stringify(S.req[k].map((x,i)=>x.sel?k+':'+i:null).filter(Boolean)).replace(/"/g,"'");
+return `<a class="b sm" style="text-decoration:none;${c?'':'opacity:.5;pointer-events:none'}" target="_blank" rel="noopener" href="${waLink(m,who)}" onclick="sent('${to}',${refs})">שלח בקשה (${c})</a>`};
+const ab=k=>`<button class="b2 sm" onclick="openReq('${k}')">＋ הוסף</button>`;
+const rsp=rs,nsel=Object.keys(S.req).reduce((n,k)=>n+cnt(k),0);
+return `<div class="c"><div class="r"><label style="flex:0 0 80px">רס"פ תורן</label><select onchange="setRasap(this.value)">${['רביב','דוד'].map(n=>`<option${n===rs?' selected':''}>${n}</option>`).join('')}</select><button class="b2" style="white-space:nowrap;${nsel?'':'opacity:.5;pointer-events:none'}" onclick="clrSel()">בטל סימונים (${nsel})</button></div></div>`
++deptCard()
++card('exit',ab('exit')+reqBtn('exit',msgExit(),'לושינסקי','לושינסקי')+statusBtn(['exit']))
++card('close',ab('close')+closeBtn())
++card('gear',ab('gear')+reqBtn('gear',msgGear(),rsp,rs)+statusBtn(['gear']))
++card('tank',ab('tank')+reqBtn('tank',msgK('tank'),rsp,rs))
++card('gen',ab('gen')+reqBtn('gen',msgK('gen'),rsp,rs))
++`<div class="c"><h2>מספרי טלפון (לשליחה ישירה בוואטסאפ)</h2>${[...REQW,'רביב','דוד','לושינסקי'].map(w=>`<div class="r"><label>${w}</label><input type="tel" inputmode="tel" placeholder="05X-XXXXXXX" value="${esc((R.phones||{})[w]||'')}" onchange="setPh('${w}',this.value)"></div>`).join('')}<div class="mu">אם לא הוזן מספר, וואטסאפ ייפתח לבחירת נמען.</div></div>`}
+let M=null;
+const MN=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function openReq(k){const d=new Date();M={k,who:REQW[0],from:null,to:null,y:d.getFullYear(),m:d.getMonth()};mRender()}
+function closeM(){M=null;mRender()}
+function pickD(id){if(!M.from||M.to){M.from=id;M.to=null}else if(id<M.from)M.from=id;else M.to=id;mRender()}
+function mNav(d){M.m+=d;if(M.m<0){M.m=11;M.y--}if(M.m>11){M.m=0;M.y++}mRender()}
+function calHtml(){const {y,m,from,to}=M,first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();let c='';
+for(let i=0;i<first;i++)c+='<span></span>';
+for(let d=1;d<=n;d++){const id=y+'-'+p2(m+1)+'-'+p2(d),e=id===from||id===to,mid=from&&to&&id>from&&id<to;c+=`<button class="cd${e?' e':mid?' m':''}" onclick="pickD('${id}')">${d}</button>`}
+return `<div class="r" style="justify-content:space-between"><button class="b2" onclick="mNav(-1)">▶</button><b>${MN[m]} ${y}</b><button class="b2" onclick="mNav(1)">◀</button></div>
+<div class="cg">${'אבגדהוש'.split('').map(x=>`<i>${x}</i>`).join('')}${c}</div>
+<div class="mu" style="margin-top:6px">${from?'מתאריך '+fd(from):'בחר תאריך התחלה'}${to?' עד '+fd(to):from?' — בחר תאריך סיום (או הוסף ליום אחד)':''}</div>`}
+function mRender(){const el=document.getElementById('modal');if(!M){el.innerHTML='';return}const k=M.k,nc=(M.cr||[]).length;
+const wo=`<select id="mw" onchange="M.who=this.value">${REQW.map(w=>`<option${w===M.who?' selected':''}>${w}</option>`).join('')}</select>`;
+const body=k==='exit'||k==='close'?`<div class="r"><label>חייל</label>${wo}</div><div class="r"><label>סיבה</label><input placeholder="סיבה (חובה)" value="${esc(M.why||'')}" oninput="M.why=this.value"></div>${calHtml()}`:k==='gear'?`<div class="r"><label>מי ביקש</label>${wo}</div><div class="r"><input id="mt" placeholder="מה הציוד?"></div>`:`<div class="r"><input id="mt" placeholder="${k==='gen'?'ציוד כללי...':'כלי טנקאי...'}"></div>`;
+el.innerHTML=`<div class="ov" onclick="if(event.target===this)${nc?'mFin()':'closeM()'}"><div class="md"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">${RQ[k][0]}</h2>${body}<div class="r" style="margin-top:12px"><button class="b2" style="flex:1" onclick="mOk(true)">＋ הוסף ועוד</button><button class="b" style="flex:1" onclick="mOk()">הוסף וסיים</button><button class="b2" onclick="${nc?'mFin()':'closeM()'}">${nc?`סיום (${nc})`:'ביטול'}</button></div>${nc?`<div class="mu" style="margin-top:6px">נוספו ${nc} בקשות</div>`:''}</div></div>`}
+function mOk(more){const k=M.k,o={st:'בהמתנה',sel:false};
+if(k==='exit'||k==='close'){if(!M.from||!(M.why||'').trim())return;o.who=M.who;o.from=M.from;o.to=M.to||M.from;o.why=M.why.trim()}
+else{const v=val('mt');if(!v)return;o.t=v;if(k==='gear'){o.who=M.who;o.d=iso()}}
+S.req[k].push(o);(M.cr=M.cr||[]).push([k,S.req[k].length-1,o]);save();
+if(more){M.why='';M.from=null;M.to=null;mRender();render();return}
+mFin()}
+function mFin(){const cr=(M&&M.cr)||[];M=null;mRender();render();if(cr.length)notifyModal(cr)}
+function addLoc(){const v=val('newloc');if(!v||S.locs.includes(v))return;S.locs.push(v);S.loc=v;save();render()}
+function delLoc(){if(S.locs.length<2)return;S.locs=S.locs.filter(x=>x!==S.loc);S.loc=S.locs[0];save();render()}
+function impN(){const t=document.getElementById('impn').value.replace(/[\u200e\u200f\u2060\u202a-\u202e]/g,'');
+const g=re=>{const m=t.match(re);return m?+m[1]:null};
+const o={shaam:g(/שע["״'׳]?מ\s*[:=\-]?\s*(\d+)/),km:g(/ק["״'׳]?מ\s*[:=\-]?\s*(\d+)/),diesel:g(/סולר\s*[:=\-]?\s*(\d+)/)};
+const b=event.target;
+if(o.shaam==null&&o.km==null&&o.diesel==null){b.textContent='לא נמצאו נתונים';setTimeout(()=>b.textContent='עדכן נתונים',1500);return}
+Object.keys(o).forEach(k=>{if(o[k]!=null)S[k]=o[k]});save();render()}
+const waMsg=()=>`רס"פ יקר, טנק ${R.cur} במוצב ${S.loc} צריך תדלוק (סולר נוכחי: ${S.diesel}), נא לתאם לי תור. בברכה, אפליקציית "הדוח היומי"`;
+function cpMsg(){try{navigator.clipboard.writeText(waMsg())}catch(e){}}
+const gi=id=>S.ammo.g.find(x=>x.id===id);
+const yest=()=>{const d=new Date();d.setDate(d.getDate()-1);return iso(d)};
+function fire(g,i){const G=gi(g),it=G.items[i];if(it.q<=0)return;it.q--;S.ammo.fired.push({ts:Date.now(),g,gn:G.name,n:it.n,q:1,k:G.kind});save();render()}
+function addQ(g,i){gi(g).items[i].q++;save();render()}
+function delI(g,i){gi(g).items.splice(i,1);save();render()}
+let FM=null;
+const fmTypes=g=>{const G=gi(g);return G.kind==='s'?['חלול','חצב','חץ','כלנית']:(BRT[g]||G.items.map(x=>x.n))};
+function fireOpen(g){const T=fmTypes(g),pref=g==='m'?'צריח עילית':'',d=T.includes(pref)?pref:(T[0]||'');FM={g,d,pick:-1,rows:[{n:d,q:1}]};fmR()}
+function fmR(){const el=document.getElementById('modal');if(!FM){el.innerHTML='';return}const G=gi(FM.g),T=fmTypes(FM.g);
+const pk=FM.pick>=0?`<div class="ov" style="background:rgba(0,0,0,.3);z-index:110" onclick="FM.pick=-1;fmR()"><div class="md" style="max-width:230px;padding:10px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="b2" style="padding:12px 0;font-size:18px" onclick="event.stopPropagation();FM.rows[${FM.pick}].q=${n};FM.pick=-1;fmR()">${n}</button>`).join('')}</div>${kpMore(`{const v=parseInt(document.getElementById('kpn').value);if(v>0){FM.rows[${FM.pick}].q=v;FM.pick=-1;fmR()}}`)}</div></div>`:'';
+el.innerHTML=`<div class="ov"><div class="md" style="max-width:290px"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">כמות שנורתה — ${esc(G.name)}</h2>${T.length?FM.rows.map((r,i)=>`<div class="r"><select style="font-size:14px;padding:6px 4px" onchange="FM.rows[${i}].n=this.value">${T.map(n=>`<option${n===r.n?' selected':''}>${esc(n)}</option>`).join('')}</select><button class="b2" style="flex:0 0 46px;padding:6px 0" onclick="FM.pick=${i};fmR()">${r.q}</button>${FM.rows.length>1?`<button class="x" onclick="FM.rows.splice(${i},1);fmR()">✕</button>`:''}</div>`).join(''):'<div class="mu">אין תחמושת בקטגוריה</div>'}<div class="r"><button class="b2" onclick="FM.rows.push({n:FM.d,q:1});fmR()">＋ הוסף שורה</button></div><div class="r" style="margin-top:12px"><button class="b" style="flex:1" onclick="fmOk()">אישור</button><button class="b2" onclick="FM=null;fmR()">ביטול</button></div></div></div>${pk}`}
+function fmOk(){const G=gi(FM.g);FM.rows.forEach(r=>{if(!r.n)return;const it=G.items.find(x=>x.n===r.n);if(it)it.q=Math.max(0,it.q-r.q);S.ammo.fired.push({ts:Date.now(),g:G.id,gn:G.name,n:r.n,q:r.q,k:G.kind})});FM=null;save();fmR();render()}
+function setFD(i,v){if(!v)return;const x=S.ammo.fired[i],d=new Date(x.ts),p=v.split('-');d.setFullYear(+p[0],+p[1]-1,+p[2]);x.ts=d.getTime();save();render()}
+const AQ={},AN={};
+const kpMore=ok=>`<div class="r" style="margin-top:8px;flex-wrap:nowrap"><input type="number" inputmode="numeric" min="1" id="kpn" placeholder="כמות אחרת" style="min-width:0;width:100%;box-sizing:border-box" onclick="event.stopPropagation()"><button class="b" style="flex:0 0 46px;padding:8px 0" onclick="event.stopPropagation();${ok}">✓</button></div>`;
+function aqOpen(g){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md" style="max-width:230px;padding:10px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="b2" style="padding:12px 0;font-size:18px" onclick="AQ['${g}']=${n};closeM();render()">${n}</button>`).join('')}</div>${kpMore(`{const v=parseInt(document.getElementById('kpn').value);if(v>0){AQ['${g}']=v;closeM();render()}}`)}</div></div>`}
+function qeOpen(g,i){const it=gi(g).items[i];if(!it)return;const set=n=>`QE('${g}',${i},${n})`;document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md" style="max-width:230px;padding:10px"><div class="mu" style="margin-bottom:6px">${esc(it.n)} — כמות במלאי (עכשיו ${it.q})</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="b2" style="padding:12px 0;font-size:18px;${n===0?'grid-column:2':''}" onclick="${set(n)}">${n}</button>`).join('')}</div>${kpMore(`{const v=parseInt(document.getElementById('kpn').value);if(v>=0)${set('v')}}`)}</div></div>`}
+function QE(g,i,n){const it=gi(g).items[i];if(it){it.q=n;save()}closeM();render()}
+const shellTypes=()=>['חלול','חצב','חץ','כלנית'];
+const BRT={m:['צריח עילית','צריח תחתית','מסדרון אחורי'],h:['ברוס 0.5']};
+function addI(g){const n=val('an-'+g),q=AQ[g]||1;if(!n)return;const G=gi(g),it=G.items.find(x=>x.n===n);if(it)it.q+=q;else G.items.push({n,q});save();render()}
+function delF(i){const x=S.ammo.fired.splice(i,1)[0],G=gi(x.g);if(G){const it=G.items.find(y=>y.n===x.n);if(it)it.q+=x.q;else G.items.push({n:x.n,q:x.q})}save();render()}
+function mvShell(g,i,to){const it=gi(g).items[i];if(!it||it.q<=0)return;it.q--;const T=gi(to),t=T.items.find(x=>x.n===it.n);if(t)t.q++;else T.items.push({n:it.n,q:1});save();render()}
+function dragGen(e,label,hit,drop,tap){e.preventDefault();const gh=document.createElement('div');gh.className='ghost';gh.textContent=label;document.body.appendChild(gh);
+let last=e,sy=0,tm,cur=null;
+const clr=()=>{if(cur)cur.classList.remove('hl');cur=null};
+const pd=ev=>ev.preventDefault();
+const mv=ev=>{last=ev;gh.style.left=ev.clientX+'px';gh.style.top=ev.clientY+'px';const h=window.innerHeight,z=120;
+sy=ev.clientY<z?-Math.ceil((z-ev.clientY)/5):ev.clientY>h-z?Math.ceil((ev.clientY-(h-z))/5):0;
+clr();cur=hit(ev);if(cur)cur.classList.add('hl')};
+const end=()=>{clearInterval(tm);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);document.removeEventListener('pointercancel',cn);document.removeEventListener('touchmove',pd);gh.remove();clr()};
+const up=ev=>{const c=hit(ev);end();if(c)drop(c);else if(tap&&Math.hypot(ev.clientX-e.clientX,ev.clientY-e.clientY)<8)tap()};
+const cn=()=>end();
+document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);document.addEventListener('pointercancel',cn);document.addEventListener('touchmove',pd,{passive:false});
+tm=setInterval(()=>{if(sy){window.scrollBy(0,sy);mv(last)}},16);mv(e)}
+function ds(e,g,i){dragGen(e,gi(g).items[i].n,ev=>{const el=document.elementFromPoint(ev.clientX,ev.clientY);const c=el&&el.closest('.gc[data-g]');return c&&c.dataset.g!==g?c:null},c=>mvShell(g,i,c.dataset.g))}
+const SL={t:18,c:18,f:5,x:4};
+const CL={'חצב':['#d94b3d','#fff'],'חלול':['#2f80d1','#fff'],'חץ':['#f2c230','#111'],'כלנית':['#d6409f','#fff'],'אלומיניום':['#b8c0c8','#111'],'תקול':['#5b5b5b','#fff']};
+const col=n=>CL[n]||(()=>{let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;return['hsl('+h+',55%,42%)','#fff']})();
+const AB={'כלנית':'כלנ','אלומיניום':'אלומ'};
+function syncSlots(){const A=S.ammo;A.slots=A.slots||{};
+A.g.filter(g=>g.kind==='s').forEach(g=>{const N=SL[g.id]||18;let sl=A.slots[g.id];
+if(!sl){sl=A.slots[g.id]=Array(N).fill(null);const l=[];g.items.forEach(x=>{for(let k=0;k<x.q;k++)l.push(x.n)});for(let k=l.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[l[k],l[j]]=[l[j],l[k]]}l.slice(0,N).forEach((n,k)=>sl[k]=n)}
+const want={},have={};g.items.forEach(x=>want[x.n]=(want[x.n]||0)+x.q);
+sl.forEach((n,k)=>{if(n==null)return;have[n]=(have[n]||0)+1;if(have[n]>(want[n]||0)){sl[k]=null;have[n]--}});
+Object.keys(want).forEach(n=>{let d=want[n]-(have[n]||0);for(let k=0;k<N&&d>0;k++)if(sl[k]==null){sl[k]=n;d--}})});save()}
+function slotPos(id,k){if(id==='x')return[k<2?40:320,300+(k%2)*45];if(id==='f'){const a=-Math.PI/2+k*2*Math.PI/5;return[180+52*Math.cos(a),318+52*Math.sin(a)]}
+const bx=id==='t'?190:10;if(k<12)return[bx+20+(k%4)*40,44+Math.floor(k/4)*40];const m=k-12;return[bx+40+(m%3)*40,44+(3+Math.floor(m/3))*40]}
+function adj(g,n,d){const G=gi(g),it=G.items.find(x=>x.n===n);if(it)it.q=Math.max(0,it.q+d);else if(d>0)G.items.push({n,q:d})}
+let SEL=null;
+function nearSlot(ev,skip){let best=null,bd=1e9,bw=0;document.querySelectorAll('svg [data-s]').forEach(el=>{if(el.dataset.s===skip)return;const q=el.getBoundingClientRect(),d=Math.hypot(ev.clientX-(q.left+q.width/2),ev.clientY-(q.top+q.height/2));if(d<bd){bd=d;best=el;bw=q.width}});return best&&bd<bw*1.25?best:null}
+function doMove(from,to){const [g,k]=from.split(':'),[g2,k2]=to.split(':'),A=S.ammo.slots,a=A[g][+k],b=A[g2][+k2];if(!a||from===to)return;
+A[g][+k]=b||null;A[g2][+k2]=a;if(g!==g2){adj(g,a,-1);adj(g2,a,1);if(b){adj(g2,b,-1);adj(g,b,1)}}save();render()}
+function fireSlot(from){const [g,k]=from.split(':'),A=S.ammo.slots,a=A[g][+k];if(!a)return;A[g][+k]=null;adj(g,a,-1);S.ammo.fired.push({ts:Date.now(),g,gn:gi(g).name,n:a,q:1,k:'s'});save();render()}
+function slotPick(id){const names=shellTypes();
+document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md"><h2 style="margin:0 0 10px;font-size:17px;color:var(--tx)">בחר סוג פגז</h2><div class="chips">${names.map(n=>`<button style="border-left:12px solid ${col(n)[0]}" onclick="slotSet('${id}','${n}')">${esc(n)}</button>`).join('')}</div><div class="r"><button class="b2" onclick="closeM()">ביטול</button></div></div></div>`}
+function slotSet(id,n){const [g,k]=id.split(':');if(S.ammo.slots[g][+k])return;S.ammo.slots[g][+k]=n;adj(g,n,1);closeM();save();render()}
+function tapSlot(id){if(!ME)return;
+if(id==='fire'){if(SEL){const f=SEL;SEL=null;fireSlot(f)}return}
+const [g,k]=id.split(':');
+if(SEL&&SEL!==id){const f=SEL;SEL=null;doMove(f,id);return}
+if(SEL===id){SEL=null;render();return}
+if(S.ammo.slots[g][+k]){SEL=id;render()}else slotPick(id)}
+function dm(e,g,k){if(!ME)return;const from=g+':'+k;dragGen(e,S.ammo.slots[g][k],ev=>Math.hypot(ev.clientX-e.clientX,ev.clientY-e.clientY)<8?null:nearSlot(ev,from),c=>{SEL=null;if(c.dataset.s==='fire')fireSlot(from);else doMove(from,c.dataset.s)},()=>tapSlot(from))}
+let ME=false;
+function mapCard(){syncSlots();const A=S.ammo;let o='';const tot=id=>gi(id).items.reduce((a,x)=>a+x.q,0);
+const blk=(id,bx)=>`<rect x="${bx}" y="22" width="160" height="214" rx="10" fill="none" stroke="var(--bd)"/><text x="${bx+80}" y="15" text-anchor="middle" font-size="12" fill="var(--mu)">${esc(gi(id).name)} · ${tot(id)}</text>`;
+const side=x=>`<rect x="${x}" y="272" width="60" height="100" rx="10" fill="none" stroke="var(--bd)"/><text x="${x+30}" y="266" text-anchor="middle" font-size="12" fill="var(--mu)">מסריחים</text>`;
+o+=side(10)+side(290)+blk('t',190)+blk('c',10)+`<circle cx="180" cy="318" r="52" fill="none" stroke="var(--bd)" stroke-dasharray="2 4"/><text x="180" y="316" text-anchor="middle" font-size="12" fill="var(--mu)">${esc(gi('f').name)}</text><text x="180" y="332" text-anchor="middle" font-size="12" fill="var(--mu)">${tot('f')}</text>`;
+['t','c','f','x'].forEach(id=>A.slots[id].forEach((n,k)=>{const [x,y]=slotPos(id,k);
+if(n){const [bg,fg]=col(n);o+=`<g class="sl" data-s="${id}:${k}" ${ME?`style="touch-action:none;cursor:grab" onpointerdown="dm(event,'${id}',${k})"`:''}><circle cx="${x}" cy="${y}" r="17" fill="${bg}" stroke="${ME&&SEL===id+':'+k?'var(--tx)':'rgba(0,0,0,.3)'}" stroke-width="${ME&&SEL===id+':'+k?4:1}"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${fg}" style="pointer-events:none">${esc(AB[n]||n)}</text></g>`}
+else o+=`<circle class="sl" data-s="${id}:${k}" ${ME?`onclick="tapSlot('${id}:${k}')" style="cursor:pointer"`:''} cx="${x}" cy="${y}" r="17" fill="transparent" stroke="var(--bd)" stroke-dasharray="3 3"/>`}));
+if(ME)o+=`<g class="sl" data-s="fire" onclick="tapSlot('fire')" style="cursor:pointer"><circle cx="310" cy="425" r="28" fill="rgba(217,75,61,.15)" stroke="#d94b3d" stroke-width="2"/><text x="310" y="429" text-anchor="middle" font-size="12" font-weight="700" fill="var(--tx)" style="pointer-events:none">נורה</text></g><text x="160" y="429" text-anchor="middle" font-size="13" fill="var(--tx)">גרור תחמושת שנורתה</text>`;
+const names=[...new Set(A.g.filter(g=>g.kind==='s').flatMap(g=>g.items.map(x=>x.n)))];
+return `<div class="c"><h2>מפת פגזים <button class="b2" style="float:left;padding:4px 12px;font-size:14px" onclick="ME=!ME;SEL=null;render()">${ME?'סיום עריכה':'עריכה'}</button></h2><svg viewBox="0 0 360 ${ME?460:385}" style="width:100%;display:block">${o}</svg>
+<div class="chips" style="margin-top:8px;font-size:13px">${names.map(n=>`<span style="display:inline-flex;gap:4px;align-items:center"><i style="width:12px;height:12px;border-radius:50%;background:${col(n)[0]};display:inline-block"></i>${esc(n)}</span>`).join(' ')}</div>
+<div class="mu">${ME?'מצב עריכה: גרור פגז לעיגול אחר, או לחץ על פגז ואז על עיגול. לחיצה על עיגול ריק מוסיפה פגז חדש. גרירה לעיגול "נורה" מורידה מהמלאי ורושמת ירי.':'המפה לקריאה בלבד. לשינוי לחץ על "עריכה".'}</div></div>`}
+function ammoSum(){const sh={},ord=['חלול','חצב','חץ','כלנית','אלומיניום','תקול'];let st=0;
+S.ammo.g.filter(g=>g.kind==='s').forEach(g=>g.items.forEach(x=>{if(x.q>0){sh[x.n]=(sh[x.n]||0)+x.q;st+=x.q}}));
+const tot=id=>{const g=gi(id);return g?g.items.reduce((a,x)=>a+x.q,0):0};
+const names=Object.keys(sh).sort((a,b)=>{const i=ord.indexOf(a),j=ord.indexOf(b);return(i<0?99:i)-(j<0?99:j)});
+return{sh,names,st,mag:tot('m'),h:tot('h')}}
+function ammoSumTxt(){const s=ammoSum();return 'סיכום תחמושת:\nפגזים:\n'+(s.names.length?s.names.map(n=>`${n} - ${s.sh[n]}`).join('\n'):'-')+`\nסה״כ פגזים - ${s.st}\n\nברוס מאג סה״כ - ${s.mag}\nברוס 0.5 סה״כ - ${s.h}`}
+function sumCard(){const s=ammoSum(),t=ammoSumTxt(),row=(l,v,b)=>`<div class="it"><span${b?' style="font-weight:700"':''}>${esc(l)}</span><b style="min-width:40px;text-align:center">${v}</b></div>`;
+return `<div class="c"><h2>סיכום מלאי — כל הקטגוריות</h2>${s.names.map(n=>row(n,s.sh[n])).join('')||'<div class="mu">אין פגזים</div>'}${row('סה״כ פגזים',s.st,1)}${row('ברוס מאג סה״כ',s.mag,1)}${row('ברוס 0.5 סה״כ',s.h,1)}
+<div class="r"><a class="b" style="flex:1;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(t)}">שלח בוואטסאפ</a><button class="b2" onclick="try{navigator.clipboard.writeText(ammoSumTxt());this.textContent='הועתק ✓'}catch(e){}">העתק</button></div></div>`}
+function ammoRep(){const O=['f','t','c','x','m','h'],T=g=>g.items.reduce((a,x)=>a+x.q,0);return 'דוח תחמושת:\n'+S.ammo.g.slice().sort((a,b)=>O.indexOf(a.id)-O.indexOf(b.id)).map(g=>g.id==='h'?`ברוס 0.5 - ${T(g)}`:`${g.name} סה״כ ${T(g)}:\n`+(g.items.length?g.items.map(x=>`${x.n} - ${x.q}`).join('\n'):'-')).join('\n\n')}
+function frAdd(el){const v=el.value;if(!v)return;const nv=FR.ammo?FR.ammo+', '+v:v;document.getElementById('fri').value=nv;el.value='';frU('ammo',nv)}
+const FR={date:null,ammo:'',hit:'כן',miss:'ללא',range:'',mtk:'מלבין',desc:''};
+const frText=()=>{const d=FR.date||iso();return `צ: ${R.cur}\nצוות: ${S.crew}\nתאריך: ${fd(d)}.${d.slice(0,4)}\nסוג תחמושת: ${FR.ammo}\nפגיעה: ${FR.hit}\nסוג החטאה: ${FR.miss}\nטווח: ${FR.range}\nשם המט״ק: ${FR.mtk}\nתיאור קצר של האירוע:\n${FR.desc}`};
+function frU(k,v){FR[k]=v;const t=frText();document.getElementById('frt').value=t;document.getElementById('fra').href='https://wa.me/?text='+encodeURIComponent(t)}
+const frCard=()=>`<div class="c"><h2>דוח ירי</h2>
+<div class="r"><label>תאריך</label><input type="date" value="${FR.date||iso()}" oninput="frU('date',this.value)"></div>
+<div class="r"><label>תחמושת</label><select onchange="frU('ammo',this.value)"><option value="">בחר סוג פגז</option>${shellTypes().map(n=>`<option${FR.ammo===n?' selected':''}>${esc(n)}</option>`).join('')}</select></div>
+<div class="r"><label>פגיעה</label><select onchange="frU('hit',this.value)"><option${FR.hit==='כן'?' selected':''}>כן</option><option${FR.hit==='לא'?' selected':''}>לא</option></select></div>
+<div class="r"><label>החטאה</label><input value="${esc(FR.miss)}" oninput="frU('miss',this.value)"></div>
+<div class="r"><label>טווח</label><input value="${esc(FR.range)}" oninput="frU('range',this.value)"></div>
+<div class="r"><label>מט״ק</label><input list="who" value="${esc(FR.mtk)}" oninput="frU('mtk',this.value)"><datalist id="who">${WHO.map(w=>`<option>${w}</option>`).join('')}</datalist></div>
+<textarea placeholder="תיאור קצר של האירוע" oninput="frU('desc',this.value)" style="min-height:70px">${esc(FR.desc)}</textarea>
+<textarea id="frt" readonly style="min-height:210px;margin-top:8px">${esc(frText())}</textarea>
+<div class="r"><a id="fra" class="b" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(frText())}">שלח בוואטסאפ</a><button class="b2" onclick="cp('frt')">העתק</button></div></div>`;
+function ammoText(){const d=AD||yest();const sh={},br={},BN={m:'ברוס מאג',h:'ברוס 0.5'};
+S.ammo.fired.filter(x=>iso(new Date(x.ts))===d).forEach(x=>{if(x.k==='b'){const n=BN[x.g]||x.n;br[n]=(br[n]||0)+x.q}else sh[x.n]=(sh[x.n]||0)+x.q});
+const parts=[...Object.entries(sh),...Object.entries(br)].map(([n,q])=>`${q} ${n}`);
+return `${R.cur}\nירוק\nשצל ${parts.length?parts.join(', '):'אין'}`}
+function ammoView(){
+const t=ammoText();
+const ORD=['f','t','c','x','m','h'];
+const grp=S.ammo.g.slice().sort((a,b)=>ORD.indexOf(a.id)-ORD.indexOf(b.id)).map(g=>{const tot=g.items.reduce((a,x)=>a+x.q,0);
+return `<div class="c gc" ${g.kind==='s'?`data-g="${g.id}"`:''}><h2>${esc(g.name)} — סה״כ ${tot}</h2>
+${g.items.map((x,i)=>`<div class="it ${x.q?'':'done'}">${g.kind==='s'?`<span class="hd" onpointerdown="ds(event,'${g.id}',${i})">⠿</span>`:''}<span>${esc(x.n)}</span><button class="b2" style="min-width:42px;padding:4px 8px;font-weight:700" onclick="qeOpen('${g.id}',${i})">${x.q}</button><button class="x" onclick="delI('${g.id}',${i})">✕</button></div>`).join('')}
+<div class="r">${g.kind==='s'||BRT[g.id]?`<select id="an-${g.id}" onchange="AN['${g.id}']=this.value">${(g.kind==='s'?shellTypes():BRT[g.id]).map(n=>`<option${n===AN[g.id]?' selected':''}>${esc(n)}</option>`).join('')}</select>`:`<input id="an-${g.id}" placeholder="סוג">`}<button class="b2" style="flex:0 0 52px;padding:8px 0" onclick="aqOpen('${g.id}')">${AQ[g.id]||1}</button><button class="b" onclick="addI('${g.id}')">הוסף</button><button class="b2" style="padding:6px 8px;font-size:13px;white-space:nowrap" onclick="fireOpen('${g.id}')">כמות שנורתה</button></div></div>`}).join('');
+const fl=S.ammo.fired.map((x,i)=>({x,i})).reverse().slice(0,40);
+return `<div class="c mu">⠿ גרור פגז לקטגוריה אחרת (פגז אחד בכל גרירה) • "כמות שנורתה" - דיווח ירי לפי סוג וכמות (יורד מהמלאי ונרשם ביומן) • ✕ גריעה מהמלאי</div>${sumCard()}${grp}
+<div class="c"><h2>ייצוא לוואטסאפ — תחמושת שנורתה</h2><div class="r"><label>תאריך</label><input type="date" value="${AD||yest()}" onchange="AD=this.value||null;render()"><button class="b2" onclick="AD=null;render()">אתמול</button></div><textarea id="amt" readonly style="min-height:90px">${esc(t)}</textarea><div class="r"><a class="b" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(t)}">שלח בוואטסאפ</a><button class="b2" onclick="cp('amt')">העתק</button></div></div>
+${frCard()}
+<div class="c"><h2>יומן ירי (מחיקה מחזירה למלאי)</h2>${fl.length?fl.map(o=>`<div class="it"><span>${esc(o.x.n)} (${esc(o.x.gn)}) ×${o.x.q}<br><span class="mu"><span style="position:relative;display:inline-block;text-decoration:underline dotted"><input type="date" value="${iso(new Date(o.x.ts))}" onchange="setFD(${o.i},this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;border:0;flex:none;cursor:pointer">${fdf(iso(new Date(o.x.ts)))}</span> ${p2(new Date(o.x.ts).getHours())}:${p2(new Date(o.x.ts).getMinutes())}</span></span><button class="x" onclick="delF(${o.i})">✕</button></div>`).join(''):'<span class="mu">אין רישומים</span>'}</div>${mapCard()}`}
+function imp(){const v=document.getElementById('imp').value;if(v.trim())parse(v)}
+function tkBar(){return `<div class="c" style="margin-top:0"><div class="r"><label>טנק</label><select onchange="swT(this.value)">${Object.keys(R.tanks).map(k=>`<option${k===R.cur?' selected':''}>${k}</option>`).join('')}</select><button class="b2" onclick="delTk()">${DT?'בטוח? לחץ שוב':'מחק טנק'}</button></div><div class="r"><label></label><input id="newtk" inputmode="numeric" maxlength="3" placeholder="מספר טנק (3 ספרות)"><button class="b2" onclick="addTk()">הוסף טנק</button></div></div>`}
+function swT(id){R.cur=id;S=R.tanks[id];sel=null;openWho=null;RD=null;MT=null;RS=false;DT=false;save();render()}
+function addTk(){const v=val('newtk');if(!/^\d{3}$/.test(v)||R.tanks[v])return;R.tanks[v]=newT();swT(v)}
+function delTk(){if(Object.keys(R.tanks).length<2)return;if(!DT){DT=true;render();return}delete R.tanks[R.cur];swT(Object.keys(R.tanks)[0])}
+const nm=s=>s.replace(/^חסר\s+/,'').trim();
+function addS(){const v=val('in-s');if(!v)return;if(!S.stock.some(x=>nm(x)===nm(v)))S.stock.push(nm(v));S.zivud=S.zivud.filter(g=>nm(g)!==nm(v));save();render()}
+function delS(i){const v=S.stock.splice(i,1)[0];if(!S.zivud.some(g=>nm(g)===nm(v)))S.zivud.push(v);save();render()}
+function impF(){let t=document.getElementById('impf').value;if(!t.trim())return;
+t=t.replace(/[\u200e\u200f\u2060\u202a-\u202e]/g,'').replace(/[―]+/g,'');
+const i1=t.search(/^דוח טפ["״]ש/m),i2=t.search(/^טיפולים נוספים שבוצעו/m),yr=new Date().getFullYear(),i3=t.search(/^דוח תחמושת/m),i4=t.search(/^תקלות שטופלו/m);
+const nx=i=>Math.min(...[i1,i2,i3,i4].filter(k=>k>i),t.length);
+const end=i=>i>=0?i:t.length,dd=(a,b)=>yr+'-'+p2(b)+'-'+p2(a);
+parse(t.slice(0,Math.min(end(i1),end(i2),end(i3),end(i4))));
+const ls=x=>x.split('\n').map(y=>y.trim()).filter(Boolean);
+if(i1>=0){const p=ls(t.slice(i1,nx(i1)));const m=p[0].match(/(\d{1,2})\.(\d{1,2})/);if(m)S.tafash=dd(m[1],m[2]);
+S.tItems=p.slice(1).map(l=>l.match(/^([✔✘])\s*(.+)$/)).filter(Boolean).map(m=>({t:m[2],done:m[1]==='✔'}))}
+if(i2>=0){const p=ls(t.slice(i2,nx(i2))).slice(1);
+S.extras=p.map(l=>l.match(/^[•\-\s]*(.+?)\s*-\s*(\d{1,2})\.(\d{1,2})$/)).filter(Boolean).map(m=>({t:m[1],d:dd(m[2],m[3])}))}
+if(i3>=0){const p=ls(t.slice(i3,nx(i3))).slice(1);let G=null;S.ammo.g.forEach(g=>g.items=[]);
+p.forEach(l=>{const z=l.match(/^ברוס(?:ים)?\s*0\.5\s*-\s*(\d+)$/);if(z){const H=S.ammo.g.find(g=>g.id==='h');if(H)H.items=[{n:'ברוס 0.5',q:+z[1]}];G=null;return}if(l.endsWith(':')){G=S.ammo.g.find(g=>l.startsWith(g.name))||null;if(G&&G.id==='h'){const m=l.match(/סה״כ\s*(\d+)/);if(m)G.items=[{n:'ברוס 0.5',q:+m[1]}]}return}const m=l.match(/^(.+?)\s*-\s*(\d+)$/);if(G&&m)G.items.push({n:m[1],q:+m[2]})})}
+if(i4>=0){const p=ls(t.slice(i4,nx(i4))).slice(1),L=[];
+p.forEach(l=>{const m=l.match(/^(נפתר|לא נפתר)\s*-\s*(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})$/);
+if(m){const e=L[L.length-1];if(e)e.hist.push({st:m[1],ts:new Date(+m[4],m[3]-1,+m[2],+m[5],+m[6]).getTime()})}else if(l.startsWith('סיבה:')){const e=L[L.length-1],h=e&&e.hist[e.hist.length-1];if(h)h.why=l.replace(/^סיבה:\s*/,'')}else if(l.startsWith('•'))L.push({t:l.replace(/^•\s*/,''),hist:[]})});
+L.forEach(e=>e.status=e.hist.length?e.hist[e.hist.length-1].st:'נפתר');S.fixLog=L}
+save();render()}
+function addM(){if(!sel)return;const t=MT?new Date(MT).getTime():Date.now();S.mtg.push({w:sel,t:isNaN(t)?Date.now():t});MT=null;save();render()}
+function rstM(){if(!RS){RS=true;render();return}S.mtg=[];RS=false;openWho=null;save();render()}
+function delM(i){S.mtg.splice(i,1);save();render()}
+const FIX=['מקלעים','מתח זחל','תותח','חיזוקים','זחלים','טיפול סדן','ניקוי טנק'];
+function ensureFixed(o){if(o.tfSeeded)return;const old=o.tItems||[];o.tItems=FIX.map(n=>({t:n,done:!!(old.find(x=>x.t===n)||{}).done})).concat(old.filter(x=>!FIX.includes(x.t)).map(x=>({t:x.t,done:x.done})));o.tfSeeded=true}
+function rstT(){if(!RT){RT=true;render();return}S.tItems.forEach(x=>x.done=false);RT=false;save();render()}
+function addT(){const v=val('in-t');if(!v)return;S.tItems.push({t:v,done:false});save();render()}
+function togT(i){S.tItems[i].done=!S.tItems[i].done;save();render()}
+function delT(i){S.tItems.splice(i,1);save();render()}
+function addE(){const v=val('in-e');if(!v)return;S.extras.push({t:v,d:val('d-e')||iso()});save();render()}
+function delE(i){S.extras.splice(i,1);save();render()}
+function upd(){const r=document.getElementById('rep');if(r)r.value=tab==='full'?full():daily();const a=document.getElementById('wad');if(a&&tab==='daily')a.href='https://wa.me/?text='+encodeURIComponent(daily())}
+
+const stepper=(k,l,d,x)=>`<div class="r"><label>${l}${x||''}</label><button class="b2 st" onclick="st('${k}',-${d})">−</button><input type="number" inputmode="numeric" value="${S[k]}" onchange="setN('${k}',this.value)" style="text-align:center"><button class="b2 st" onclick="st('${k}',${d})">+</button></div>`;
+const list=(k,t)=>`<div class="c"><h2>${t}</h2>${S[k].map((x,i)=>`${k==='faults'&&EDF===i?`<div class="it"><input id="ef" value="${esc(x)}" onkeydown="if(event.key==='Enter')saveF(${i})"><button class="x" style="color:var(--ac)" onclick="saveF(${i})">✔</button><button class="x" onclick="EDF=null;render()">✕</button></div>`:`<div class="it"><span>${esc(x)}</span>${k==='faults'?`<button class="x" style="color:var(--mu)" onclick="editF(${i})">✎</button>`:''}<button class="x" onclick="delL('${k}',${i})">✕</button></div>`}`).join('')}<div class="r"><input id="in-${k}" placeholder="הוסף..." onkeydown="if(event.key==='Enter')addL('${k}')"><button class="b" onclick="addL('${k}')">הוסף</button></div></div>`;
+const dateR=(k,l)=>`<div class="r"><label>${l}</label><input type="date" value="${S[k]}" onchange="setF('${k}',this.value)"></div>`;
+
+function view(){
+if(tab==='daily')return `
+<div class="c"><h2>פרטים</h2>
+<div class="r"><label>תאריך</label><input type="date" value="${RD||iso()}" onchange="RD=this.value||null;upd()"><button class="b2" onclick="RD=null;render()">היום</button></div>
+<div class="r"><label>צ</label><b>${R.cur}</b></div>
+<div class="r"><label>צוות</label><input value="${esc(S.crew)}" onchange="setF('crew',this.value)"></div>
+<div class="r"><label>מיקום</label><select onchange="setF('loc',this.value)">${S.locs.map(l=>`<option${l===S.loc?' selected':''}>${esc(l)}</option>`).join('')}</select><button class="b2" onclick="delLoc()">מחק</button></div>
+<div class="r"><label></label><input id="newloc" placeholder="מיקום חדש"><button class="b2" onclick="addLoc()">הוסף</button></div></div>
+<div class="c">${stepper('shaam','שע"מ',1)}${stepper('km','ק"מ',1)}${stepper('diesel','סולר',100,S.diesel<=900?'<br><a class="b2" style="display:inline-block;padding:2px 10px;font-size:13px;margin-top:4px;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(waMsg())+'" onclick="cpMsg()">דווח</a>':'')}</div>
+<div class="c"><h2>הדבקת שע"מ / ק"מ / סולר</h2><textarea id="impn" style="min-height:80px" placeholder='לדוגמה:&#10;שע"מ 4554&#10;ק"מ 7987&#10;סולר 900'></textarea><div class="r"><button class="b" onclick="impN()">עדכן נתונים</button></div></div>
+${list('faults','תקלות')}${list('zivud','פערי זיווד')}${list('kesher','פערים קשר')}${list('klali','פערים כללי')}
+<div class="c"><h2>תאריכים</h2>${dateR('talat','טלת מלא')}${dateR('tk','ת.כ.')}${dateR('tafash','טפש')}<div class="r"><button class="b2" style="flex:1;${(S.talat||S.tk||S.tafash)?'':'opacity:.5;pointer-events:none'}" onclick="clrDates()">${RDt?'בטוח? לחץ שוב למחיקת התאריכים':'נקה תאריכים (טלת מלא, ת.כ., טפש)'}</button></div></div>
+<div class="c"><h2>טעינת דוח מוכן (דורס את הקיים)</h2><textarea id="imp" placeholder="הדבק כאן דוח יומי..."></textarea><div class="r"><button class="b" onclick="imp()">טען דוח</button></div></div>
+<div class="c"><h2>ייצוא דוח יומי</h2><textarea id="rep" readonly>${esc(daily())}</textarea><div class="r"><a id="wad" class="b" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(daily())}">שלח בוואטסאפ</a></div></div>`;
+if(tab==='mtg'){
+const cnt=WHO.map(w=>({w,a:S.mtg.map((x,i)=>({...x,i})).filter(x=>x.w===w)})).sort((a,b)=>b.a.length-a.a.length);
+return `<div class="c"><h2>מי הרים/הוריד מתג 24?</h2><div class="chips">${WHO.map(w=>`<button class="${sel===w?'on':''}" onclick="sel='${w}';render()">${w}</button>`).join('')}</div>
+<div class="r"><label>זמן</label><input type="datetime-local" id="mt" value="${MT||nowL()}" onchange="MT=this.value||null"><button class="b2" onclick="MT=null;render()">עכשיו</button></div>
+<button class="b" onclick="addM()" ${sel?'':'disabled style="opacity:.5"'}>הוסף ${sel||''}</button></div>
+<div class="c"><h2>דירוג <button class="x" style="float:left;font-size:14px" onclick="rstM()">${RS?'בטוח? לחץ שוב':'איפוס נתונים'}</button></h2>${cnt.map(c=>`<div class="rk" onclick="openWho=openWho==='${c.w}'?null:'${c.w}';render()"><span>${c.w}</span><span>${c.a.length} ${openWho===c.w?'▲':'▼'}</span></div>${openWho===c.w?`<div class="sub">${c.a.length?c.a.slice().reverse().map(x=>`<div class="it"><span>${fdt(x.t)}</span><button class="x" onclick="delM(${x.i})">✕</button></div>`).join(''):'אין פעמים'}</div>`:''}`).join('')}</div>`}
+if(tab==='tf')return `<div class="c"><h2>תאריך ביצוע (מתעדכן בדוח היומי)</h2>${dateR('tafash','תאריך')}</div>
+<div class="c"><h2>פריטי טפ"ש — בוצעו ${S.tItems.filter(x=>x.done).length}/${S.tItems.length} <button class="x" style="float:left;font-size:14px" onclick="rstT()">${RT?'בטוח? לחץ שוב':'איפוס נתונים'}</button></h2>
+${S.tItems.map((x,i)=>`<div class="it ${x.done?'done':''}"><input type="checkbox" ${x.done?'checked':''} onchange="togT(${i})"><span>${esc(x.t)}</span><button class="x" onclick="delT(${i})">✕</button></div>`).join('')}
+<div class="r"><input id="in-t" placeholder="פריט חדש..." onkeydown="if(event.key==='Enter')addT()"><button class="b" onclick="addT()">הוסף</button></div></div>`;
+if(tab==='sched')return schedView();
+if(tab==='req')return reqView();
+if(tab==='ammo')return ammoView();
+if(tab==='stock')return `<div class="c"><h2>מלאי זיווד — ${S.stock.length} פריטים</h2>
+${S.stock.map((x,i)=>`<div class="it"><span>${esc(x)}</span><button class="x" onclick="delS(${i})">✕</button></div>`).join('')}
+<div class="r"><input id="in-s" placeholder="פריט חדש במלאי..." onkeydown="if(event.key==='Enter')addS()"><button class="b" onclick="addS()">הוסף</button></div>
+<p class="mu">הוספת פריט למלאי מסירה אותו מפערי הזיווד בדוח היומי. מחיקה מהמלאי מוסיפה אותו לפערי הזיווד.</p></div>`;
+if(tab==='ex')return `<div class="c"><h2>טיפולים נוספים שבוצעו</h2>
+${exOrd().map(({x,i})=>`<div class="it"><span>${esc(x.t)}<br><span class="mu">${fdf(x.d)}</span></span><button class="x" onclick="delE(${i})">✕</button></div>`).join('')}
+<div class="r"><input id="in-e" placeholder="טיפול חדש..."></div><div class="r"><input type="date" id="d-e" value="${iso()}"><button class="b" onclick="addE()">הוסף</button></div></div>
+<div class="c"><h2>יומן טיפולים — תקלות שטופלו</h2>${S.fixLog.length?fxOrd().map(({e,i})=>`<div class="it" style="align-items:flex-start"><div style="flex:1">${EDX===i?`<div class="r"><input id="efx" value="${esc(e.t)}" onkeydown="if(event.key==='Enter')saveFix(${i})"><button class="x" style="color:var(--ac)" onclick="saveFix(${i})">✔</button><button class="x" onclick="EDX=null;render()">✕</button></div>`:`<div>${esc(e.t)} <button class="x" style="color:var(--mu);padding:0 4px" onclick="editFix(${i})">✎</button></div>`}${e.hist.map((h,j)=>`<div class="mu">${h.st} - ${fdt(h.ts)}</div>`+(h.st==='לא נפתר'?`<input style="width:100%;margin:2px 0 6px" placeholder="למה לא נפתרה?" value="${esc(h.why||'')}" onchange="setWhy(${i},${j},this.value)">`:'')).join('')}</div><select style="flex:0 0 100px" onchange="setFix(${i},this.value)"><option${e.status==='נפתר'?' selected':''}>נפתר</option><option${e.status==='לא נפתר'?' selected':''}>לא נפתר</option></select><button class="x" onclick="delFix(${i})">✕</button></div>`).join(''):'<span class="mu">אין תקלות שטופלו. מחיקת תקלה מהדוח היומי תירשם כאן.</span>'}</div>`;
+return `<div class="c"><h2>דוח מלא — יומי + טפ"ש + טיפולים</h2><textarea id="rep" readonly style="min-height:420px">${esc(full())}</textarea><div class="r"><a class="b" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(full())}">שלח בוואטסאפ</a></div></div>
+<div class="c"><h2>טעינת דוח מלא (דורס את הקיים)</h2><textarea id="impf" placeholder="הדבק כאן דוח מלא..."></textarea><div class="r"><button class="b" onclick="impF()">טען דוח מלא</button></div></div>`}
+
+
+R.sched=R.sched||{};R.sched.hdr=R.sched.hdr||'מוצב מטאור';R.sched.gen=R.sched.gen||{items:[],note:''};R.sched.days=R.sched.days||{};
+let SC='gen',SE=null,SK=false,SR='';
+const scMin=t=>{const m=/(\d{1,2}):(\d{2})/.exec(t||'');return m?+m[1]*60+ +m[2]:9999};
+function scO(c){if(SC==='gen')return R.sched.gen;let d=R.sched.days[SC];if(!d){d={items:[],note:''};if(c)R.sched.days[SC]=d}return d}
+function scSort(o){o.items=o.items.map((x,i)=>[x,i]).sort((a,b)=>scMin(a[0].t)-scMin(b[0].t)||a[1]-b[1]).map(a=>a[0])}
+function scGo(v){SC=v||'gen';SE=null;SK=false;render()}
+function scT(t){const m=(t||'').match(/\d{1,2}:\d{2}/g)||[];return [0,1].map(i=>m[i]?m[i].padStart(5,'0'):'')}
+function scJ(a,b){return a&&b?a+'-'+b:a}
+function scAdd(){const t=scJ(val('sct'),val('sct2')),x=val('scx'),b=document.getElementById('scb').checked;if(!t&&!x)return;const o=scO(true);o.items.push({t,x,b});scSort(o);save();render()}
+function scDel(i){scO(true).items.splice(i,1);SE=null;save();render()}
+function scEd(i){SE=i;render()}
+function scSv(i){const o=scO(true),it=o.items[i];it.t=scJ(val('set'),val('set2'));it.x=val('sex');it.b=document.getElementById('seb').checked;scSort(o);SE=null;save();render()}
+function scNote(v){scO(true).note=v.trim();save()}
+function scHdr(v){R.sched.hdr=v.trim()||'מוצב מטאור';save()}
+function scMsg(){const o=scO(false);const h=R.sched.hdr+' - לוז '+(o.st?o.st+' ':'')+(SC==='gen'?'באופן כללי':'ל'+wdOf(SC)+' '+fdf(SC))+':';
+return [h].concat(o.items.map(it=>{const l=(it.t||'')+(it.t&&it.x?' - ':'')+(it.x||'');return it.b?'*'+l+'*':l})).concat(o.note?[o.note]:[]).join('\n')}
+function scCopy(btn){const m=scMsg();try{navigator.clipboard.writeText(m).then(()=>{btn.textContent='הועתק ✓'},()=>{})}catch(e){}}
+function scSt(v){scO(true).st=v;save();render()}
+function scFromGen(){const o=scO(true);o.items=R.sched.gen.items.map(x=>Object.assign({},x));o.note=R.sched.gen.note||'';scSort(o);save();render()}
+function scClr(){if(!SK){SK=true;render();return}SK=false;if(SC==='gen')R.sched.gen={items:[],note:''};else{const g=R.sched.gen;R.sched.days[SC]={items:g.items.map(x=>Object.assign({},x)),note:g.note||'',st:''}}SE=null;save();render()}
+function scParse(txt){const secs=[{h:null,items:[],note:[]}];
+let base=null;txt.replace(/[‎‏⁦-⁩]/g,'').split('\n').forEach(l0=>{const pm=l0.match(/^\[(\d{1,2})[./](\d{1,2})/);if(pm)base=iso(new Date(yf(+pm[1],+pm[2]),+pm[2]-1,+pm[1]));let l=l0.replace(/^\[\d{1,2}[./]\d{1,2}(?:[./]\d+)?,\s*\d{1,2}:\d{2}(?::\d{2})?\]\s*[^:\n]*:\s*/,'').trim();if(!l)return;
+let b=false;const bm=l.match(/^\*(.*)\*$/);if(bm){b=true;l=bm[1].trim()}
+const m=l.match(/^(\d{1,2}:\d{2}(?:\s*[-–]\s*\d{1,2}:\d{2})?)\s*(?:[-–:]\s*)?(.*)$/);
+if(m){secs[secs.length-1].items.push({t:m[1].replace(/\s*[-–]\s*/,'-'),x:m[2].replace(/\*/g,'').trim(),b});return}
+if(/לוז/.test(l)&&/:\s*$/.test(l)){secs.push({h:l,base,items:[],note:[]});return}
+secs[secs.length-1].note.push(l.replace(/\*/g,'').trim())});
+return secs.filter(x=>x.items.length||x.note.length||x.h)}
+function scTarget(h,base){if(!h)return SC;const bd=base?new Date(+base.slice(0,4),+base.slice(5,7)-1,+base.slice(8)):new Date();if(/למחר|להיום/.test(h)){if(!base)return SC!=='gen'?SC:iso();if(/למחר/.test(h))bd.setDate(bd.getDate()+1);return iso(bd)}const d=h.match(/(\d{1,2})[./](\d{1,2})/);if(d)return dIso(d[1],d[2]);if(/כללי/.test(h))return 'gen';return SC}
+function scImp(){const t=document.getElementById('scimp').value;if(!t.trim())return;const secs=scParse(t).filter(x=>x.items.length||x.note.length);let n=0;const nm=[];
+secs.forEach(x=>{const k=scTarget(x.h,x.base);const o=k==='gen'?R.sched.gen:(R.sched.days[k]=R.sched.days[k]||{items:[],note:''});o.items=x.items;o.note=x.note.join('\n');scSort(o);n++;nm.push(k==='gen'?'כללי':wdOf(k)+' '+fdf(k));if(secs.length>1||x.h)SC=k});
+SR=n?'נטען ל: '+nm.join(' · '):'לא זוהו שורות עם שעה';save();render()}
+function schedView(){if(SC!=='gen'&&!R.sched.days[SC]&&R.sched.gen.items.length){const g=R.sched.gen;R.sched.days[SC]={items:g.items.map(x=>Object.assign({},x)),note:g.note||'',st:''};save()}
+const o=scO(false),T=iso(),T2=nextD();
+const seg=(k,l)=>`<button class="${SC===k?'b':'b2'}" style="flex:1" onclick="scGo('${k}')">${l}</button>`;
+const items=o.items.map((it,i)=>SE===i?`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><div class="r"><label>משעה</label><input type="time" id="set" value="${scT(it.t)[0]}" style="flex:1;min-width:0;width:100%;box-sizing:border-box;height:42px;font-size:16px"></div><div class="r"><label>עד</label><input type="time" id="set2" value="${scT(it.t)[1]}" style="flex:1;min-width:0;width:100%;box-sizing:border-box;height:42px;font-size:16px"></div><div class="r"><input id="sex" value="${esc(it.x||'')}" placeholder="פעילות"></div><div class="r"><label><input type="checkbox" id="seb"${it.b?' checked':''}> מודגש</label><button class="b" onclick="scSv(${i})">שמור</button><button class="b2" onclick="SE=null;render()">בטל</button></div></div>`
+:`<div class="it" style="align-items:flex-start;${it.b?'font-weight:700':''}"><div style="flex:1"><span style="color:var(--ac);white-space:nowrap">${esc(it.t||'')}</span>${it.t&&it.x?' · ':''}${esc(it.x||'')}</div><button class="x" style="padding:0 6px" onclick="scEd(${i})">✎</button><button class="x" style="padding:0 6px" onclick="scDel(${i})">✕</button></div>`).join('');
+const title=SC==='gen'?'לוז כללי':wdOf(SC)+' '+fdf(SC)+(SC===T?' · היום':SC===T2?' · מחר':'');
+return `<div class="c"><h2>לוז יומי</h2><div class="r">${seg('gen','כללי')}${seg(T,'היום')}${seg(T2,'מחר')}</div><div class="r"><label>תאריך</label><input type="date" value="${SC==='gen'?'':SC}" onchange="scGo(this.value)"></div></div>
+<div class="c"><h2>${title}</h2>${items||'<div class="mu">אין פעילויות. הוסף למטה או טען מטקסט.</div>'}
+<div class="r" style="margin-top:10px"><label>משעה</label><input type="time" id="sct" style="flex:1;min-width:0;width:100%;box-sizing:border-box;height:42px;font-size:16px"></div><div class="r"><label>עד</label><input type="time" id="sct2" style="flex:1;min-width:0;width:100%;box-sizing:border-box;height:42px;font-size:16px"></div><div class="r"><input id="scx" placeholder="פעילות" onkeydown="if(event.key==='Enter')scAdd()"></div>
+<div class="r"><label><input type="checkbox" id="scb"> מודגש</label><button class="b" style="flex:1" onclick="scAdd()">הוסף</button></div>
+<div class="r">${['','חדש','מעודכן','לא סופי'].map(v=>`<button class="${(o.st||'')===v?'b':'b2'}" style="flex:1;padding:8px 4px" onclick="scSt('${v}')">${v||'ללא'}</button>`).join('')}</div><div class="mu">סטטוס הלוז (יופיע בכותרת ההודעה)</div>
+<textarea placeholder="הערות בסוף הלוז (למשל: רביעי בבוקר רק צוות מלבין קם לזמן גשר)" style="min-height:60px;margin-top:8px" onchange="scNote(this.value)">${esc(o.note||'')}</textarea>
+<div class="r"><label>כותרת</label><input value="${esc(R.sched.hdr)}" onchange="scHdr(this.value)"></div>
+<div class="r"><a class="b" style="flex:1;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(scMsg())}">שלח בוואטסאפ</a><button class="b2" onclick="scCopy(this)">העתק</button></div>
+<div class="r">${SC!=='gen'?`<button class="b2" style="flex:1" onclick="scFromGen()">העתק מהכללי</button>`:''}<button class="b2" onclick="scClr()">${SK?'בטוח? לחץ שוב':'נקה לוז'}</button></div></div>
+<div class="c"><details open><summary style="cursor:pointer;font-weight:700">📋 הדבקת לוז מוכן</summary><div class="mu" style="margin:6px 0">אפשר להדביק גם הודעות וואטסאפ. כותרת כמו "לוז באופן כללי" או "לוז מלא למחר" משייכת לכללי או למחר, ובלי כותרת הטקסט נטען ללוז שמוצג. שורה עטופה ב-* תהיה מודגשת.</div><textarea id="scimp" style="min-height:140px" placeholder="הדבק כאן לוז מוכן (גם הודעת וואטסאפ) והוא ייטען אוטומטית" onpaste="setTimeout(scImp,50)"></textarea><div class="r"><button class="b" style="flex:1" onclick="scImp()">טען</button></div>${SR?`<div class="mu">${SR}</div>`:''}</details></div>`}
+
+function render(){
+ensureFixed(S);
+document.getElementById('tk').innerHTML=tkBar();
+document.getElementById('nav').innerHTML=Object.entries(TABS).map(([k,v])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render()">${v}</button>`).join('');
+document.getElementById('app').innerHTML=view()}
+render();
+deptAlert();
+</script></body></html>
