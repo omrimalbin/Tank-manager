@@ -8,11 +8,11 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141910;--card:#1e251a;--tx:#e8ecdf;--mu:#9aa58c;--ac:#9fb86a;--on:#141910;--ac2:#2b3523;--bd:#343e2b;--rd:#ff8a80}}
 :root[data-theme="dark"]{--bg:#141910;--card:#1e251a;--tx:#e8ecdf;--mu:#9aa58c;--ac:#9fb86a;--on:#141910;--ac2:#2b3523;--bd:#343e2b;--rd:#ff8a80}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;padding-bottom:90px}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;padding-bottom:150px}
 .w{max-width:640px;margin:0 auto;padding:10px}
 h1{font-size:20px;margin:6px 0 10px}
-nav{display:flex;gap:6px;overflow-x:auto;position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--bg);border-top:1px solid var(--bd);padding:8px 10px calc(8px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
-nav button{flex:0 0 auto;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:20px;font-size:15px}
+nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--bg);border-top:1px solid var(--bd);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+nav button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 2px;border-radius:12px;font-size:12px;line-height:1.15;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;overflow-wrap:anywhere}nav button i{font-style:normal;font-size:20px;line-height:1}
 nav button.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
 .c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}
 .c h2{font-size:15px;margin:0 0 8px;color:var(--mu)}
@@ -601,10 +601,11 @@ function cbAuto(){if(!CBd||!cbOn())return;clearTimeout(CBt);CBt=setTimeout(cbSav
 async function cbNow(){try{localStorage.setItem('tank-cb','1')}catch(e){}cbMsg('מגבה...');await cbSave()}
 async function cbRestore(){if(!CBd)return;if(!CBq){CBq=true;render();return}CBq=false;try{const m=await CBd.doc('bkmeta').get();if(!m.exists){cbMsg('אין גיבוי לשחזור');render();return}const n=m.data().n;let js='';for(let i=0;i<n;i++){const d=await CBd.doc('bk'+i).get();if(!d.exists)throw 0;js+=d.data().s}const o=JSON.parse(js);if(!o||!o.tanks)throw 0;localStorage.setItem('tank-v2',JSON.stringify(o));localStorage.setItem('tank-cb','1');location.reload()}catch(e){cbMsg('השחזור נכשל');render()}}
 const cbCard=()=>CBd?`<div class="c"><h2>גיבוי בענן של Claude</h2><div class="mu" id="cbm" style="font-weight:700">${esc(CBm||'אין גיבוי עדיין')}</div><div class="r"><button class="b" style="flex:1" onclick="cbNow()">גבה עכשיו</button><button class="b2" style="flex:1" onclick="cbRestore()">${CBq?'בטוח? לחץ שוב':'שחזר מהגיבוי'}</button></div><div class="mu">אחרי הגיבוי הראשון או השחזור, הנתונים מגובים אוטומטית כמה שניות אחרי כל שינוי. שחזור דורס את הנתונים במכשיר הזה.</div></div>`:'';
+const TI={daily:'📋',tf:'🔧',ex:'🛠️',stock:'📦',full:'📄',req:'🙋',ammo:'💥',sched:'🗓️',mtg:'⏱️'};
 function render(){
 ensureFixed(S);
 document.getElementById('tk').innerHTML=tkBar();
-document.getElementById('nav').innerHTML=Object.entries(TABS).map(([k,v])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render()">${v}</button>`).join('');
+document.getElementById('nav').innerHTML=Object.entries(TABS).map(([k,v])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render()"><i>${TI[k]||'•'}</i>${v}</button>`).join('');
 document.getElementById('app').innerHTML=view();try{const on=document.querySelector('#nav .on');if(on&&on.scrollIntoView)on.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}}
 render();
 deptAlert();
