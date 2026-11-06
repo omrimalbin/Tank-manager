@@ -70,7 +70,7 @@ Object.keys(R.tanks).forEach(k=>{const am=R.tanks[k].ammo;if(!am.g.some(g=>g.id=
 if(!am.merged){const mp={},out=[];(am.fired||[]).forEach(x=>{const d=new Date(x.ts),key=[x.g,x.n,x.k,iso(d),d.getHours()].join('|');if(mp[key])mp[key].q+=x.q;else{mp[key]=Object.assign({},x);out.push(mp[key])}});am.fired=out;am.merged=true}});
 S=R.tanks[R.cur];
 R.dept=R.dept||{};R.dept.raw=R.dept.raw||'';R.dept.events=R.dept.events||[];R.dept.bad=R.dept.bad||[];delete R.dept.items;
-const save=()=>{try{localStorage.setItem('tank-v2',JSON.stringify(R))}catch(e){}};
+const save=()=>{try{localStorage.setItem('tank-v2',JSON.stringify(R))}catch(e){}try{cbAuto()}catch(e){}};
 let tab='daily',sel=null,openWho=null,RD=null,MT=null,RS=false,DT=false,RT=false,RP=false,RDt=false,AD=null,EDF=null,EDX=null;
 const nowL=()=>{const d=new Date();return iso(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())};
 const WHO=['מלבין','ליעד','גברי','זאב'];
@@ -533,7 +533,7 @@ ${exOrd().map(({x,i})=>`<div class="it"><span>${esc(x.t)}<br><span class="mu">${
 <div class="r"><input id="in-e" placeholder="טיפול חדש..."></div><div class="r"><input type="date" id="d-e" value="${iso()}"><button class="b" onclick="addE()">הוסף</button></div></div>
 <div class="c"><h2>יומן טיפולים — תקלות שטופלו</h2>${S.fixLog.length?fxOrd().map(({e,i})=>`<div class="it" style="align-items:flex-start"><div style="flex:1">${EDX===i?`<div class="r"><input id="efx" value="${esc(e.t)}" onkeydown="if(event.key==='Enter')saveFix(${i})"><button class="x" style="color:var(--ac)" onclick="saveFix(${i})">✔</button><button class="x" onclick="EDX=null;render()">✕</button></div>`:`<div>${esc(e.t)} <button class="x" style="color:var(--mu);padding:0 4px" onclick="editFix(${i})">✎</button></div>`}${e.hist.map((h,j)=>`<div class="mu">${h.st} - ${fdt(h.ts)}</div>`+(h.st==='לא נפתר'?`<input style="width:100%;margin:2px 0 6px" placeholder="למה לא נפתרה?" value="${esc(h.why||'')}" onchange="setWhy(${i},${j},this.value)">`:'')).join('')}</div><select style="flex:0 0 100px" onchange="setFix(${i},this.value)"><option${e.status==='נפתר'?' selected':''}>נפתר</option><option${e.status==='לא נפתר'?' selected':''}>לא נפתר</option></select><button class="x" onclick="delFix(${i})">✕</button></div>`).join(''):'<span class="mu">אין תקלות שטופלו. מחיקת תקלה מהדוח היומי תירשם כאן.</span>'}</div>`;
 return `<div class="c"><h2>דוח מלא — יומי + טפ"ש + טיפולים</h2><textarea id="rep" readonly style="min-height:420px">${esc(full())}</textarea><div class="r"><a class="b" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(full())}">שלח בוואטסאפ</a></div></div>
-<div class="c"><h2>טעינת דוח מלא (דורס את הקיים)</h2><textarea id="impf" placeholder="הדבק כאן דוח מלא..."></textarea><div class="r"><button class="b" onclick="impF()">טען דוח מלא</button></div></div>`}
+${cbCard()}<div class="c"><h2>טעינת דוח מלא (דורס את הקיים)</h2><textarea id="impf" placeholder="הדבק כאן דוח מלא..."></textarea><div class="r"><button class="b" onclick="impF()">טען דוח מלא</button></div></div>`}
 
 
 R.sched=R.sched||{};R.sched.hdr=R.sched.hdr||'מוצב מטאור';R.sched.gen=R.sched.gen||{items:[],note:''};R.sched.days=R.sched.days||{};
@@ -585,6 +585,16 @@ return `<div class="c"><h2>לוז יומי</h2><div class="r">${seg('gen','כל�
 <div class="r">${SC!=='gen'?`<button class="b2" style="flex:1" onclick="scFromGen()">העתק מהכללי</button>`:''}<button class="b2" onclick="scClr()">${SK?'בטוח? לחץ שוב':'נקה לוז'}</button></div></div>
 <div class="c"><details open><summary style="cursor:pointer;font-weight:700">📋 הדבקת לוז מוכן</summary><div class="mu" style="margin:6px 0">אפשר להדביק גם הודעות וואטסאפ. כותרת כמו "לוז באופן כללי" או "לוז מלא למחר" משייכת לכללי או למחר, ובלי כותרת הטקסט נטען ללוז שמוצג. שורה עטופה ב-* תהיה מודגשת.</div><textarea id="scimp" style="min-height:140px" placeholder="הדבק כאן לוז מוכן (גם הודעת וואטסאפ) והוא ייטען אוטומטית" onpaste="setTimeout(scImp,50)"></textarea><div class="r"><button class="b" style="flex:1" onclick="scImp()">טען</button></div>${SR?`<div class="mu">${SR}</div>`:''}</details></div>`}
 
+let CBd=null,CBm='',CBt=null,CBb=false,CBq=false;
+const cbTs=t=>{const d=new Date(t);return fdf(iso(d))+' '+p2(d.getHours())+':'+p2(d.getMinutes())};
+const cbOn=()=>{try{return localStorage.getItem('tank-cb')==='1'}catch(e){return false}};
+const cbMsg=t=>{CBm=t;const el=document.getElementById('cbm');if(el)el.textContent=t};
+async function cbInit(){try{if(!window.claude||!claude.use)return;const db=await claude.use('db'),us=await claude.use('user');if(!db||!us)return;const id=await us.id();if(!id)return;CBd=db.collection('data/users/'+id);const m=await CBd.doc('bkmeta').get();if(m.exists)CBm='גיבוי אחרון: '+cbTs(m.data().ts);render()}catch(e){}}
+async function cbSave(){if(!CBd||CBb)return;CBb=true;try{const js=JSON.stringify(R),N=60000,n=Math.ceil(js.length/N)||1;for(let i=0;i<n;i++)await CBd.doc('bk'+i).set({s:js.slice(i*N,(i+1)*N)});const ts=Date.now();await CBd.doc('bkmeta').set({ts,n});cbMsg('גובה: '+cbTs(ts))}catch(e){cbMsg('הגיבוי נכשל - נסה שוב')}CBb=false}
+function cbAuto(){if(!CBd||!cbOn())return;clearTimeout(CBt);CBt=setTimeout(cbSave,4000)}
+async function cbNow(){try{localStorage.setItem('tank-cb','1')}catch(e){}cbMsg('מגבה...');await cbSave()}
+async function cbRestore(){if(!CBd)return;if(!CBq){CBq=true;render();return}CBq=false;try{const m=await CBd.doc('bkmeta').get();if(!m.exists){cbMsg('אין גיבוי לשחזור');render();return}const n=m.data().n;let js='';for(let i=0;i<n;i++){const d=await CBd.doc('bk'+i).get();if(!d.exists)throw 0;js+=d.data().s}const o=JSON.parse(js);if(!o||!o.tanks)throw 0;localStorage.setItem('tank-v2',JSON.stringify(o));localStorage.setItem('tank-cb','1');location.reload()}catch(e){cbMsg('השחזור נכשל');render()}}
+const cbCard=()=>CBd?`<div class="c"><h2>גיבוי בענן של Claude</h2><div class="mu" id="cbm" style="font-weight:700">${esc(CBm||'אין גיבוי עדיין')}</div><div class="r"><button class="b" style="flex:1" onclick="cbNow()">גבה עכשיו</button><button class="b2" style="flex:1" onclick="cbRestore()">${CBq?'בטוח? לחץ שוב':'שחזר מהגיבוי'}</button></div><div class="mu">אחרי הגיבוי הראשון או השחזור, הנתונים מגובים אוטומטית כמה שניות אחרי כל שינוי. שחזור דורס את הנתונים במכשיר הזה.</div></div>`:'';
 function render(){
 ensureFixed(S);
 document.getElementById('tk').innerHTML=tkBar();
@@ -592,4 +602,5 @@ document.getElementById('nav').innerHTML=Object.entries(TABS).map(([k,v])=>`<but
 document.getElementById('app').innerHTML=view()}
 render();
 deptAlert();
+cbInit();
 </script></body></html>
